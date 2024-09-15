@@ -1,0 +1,11 @@
+{
+    "source": ".",
+    "target": "/ext/test",
+    "include": [
+        "**/*.js"
+    ],
+    "exclude": [
+        "**/*.go"
+    ],
+    "run": []
+}

@@ -8,6 +8,14 @@ import (
 )
 
 func main() {
+	c, err := flipper.GetConfigFromFile("flipper.json")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	println(c.Source)
+
 	port, err := flipper.GetFlipperPort()
 
 	if err != nil {
@@ -31,7 +39,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = f0.UploadFile("fssdk.go", "/ext/test/huge.jpg", func(progress float32) {
+	err = f0.UploadFile("main.go", "/ext/test/huge.jpg", func(progress float32) {
 		fmt.Printf("%d%%\r", int(progress*100))
 	})
 
