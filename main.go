@@ -29,17 +29,7 @@ func main() {
 
 	app := app.New(port)
 
-	cli, err := app.StartCliSession()
-
-	if err != nil {
-		log.Fatal(err)
-
-		return
-	}
-
-	defer cli.Close()
-
-	cli.ReadUntilTerminal()
+	defer app.Close()
 
 	rpc, err := app.StartRpcSession()
 
@@ -82,6 +72,20 @@ func main() {
 	}
 
 	err = rpc.Storage_CreateFolderRecursive("/ext/test/a/b/c/d/e/f")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = app.RunCommands(config.Run, func(command string, output []byte, err error) (bool, error) {
+		if err != nil && err != cli.ErrNoTerminalFound {
+			return false, err
+		}
+
+		fmt.Printf("%s\n", output)
+
+		return true, nil
+	})
 
 	if err != nil {
 		log.Fatal(err)

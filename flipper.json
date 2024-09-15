@@ -8,5 +8,9 @@
         "**.git**",
         "*.go"
     ],
-    "run": []
+    "run": [
+        "storage tree /ext/test",
+        "top",
+        "<CTRL+C>"
+    ]
 }

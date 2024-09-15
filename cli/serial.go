@@ -54,11 +54,11 @@ func (cli *CLI) ReadUntilTerminal() ([]byte, error) {
 	data, found, err := cli.ReadUntil(TerminalDelimiter)
 
 	if err != nil {
-		return nil, err
+		return data, err
 	}
 
 	if !found {
-		return nil, ErrNoTerminalFound
+		return data, ErrNoTerminalFound
 	}
 
 	return data, nil

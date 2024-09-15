@@ -19,20 +19,36 @@ func New(port string) *Flipper {
 	}
 }
 
-func (f0 *Flipper) StartCliSession() (*cli.CLI, error) {
+func (f0 *Flipper) Close() error {
 	if f0.cli != nil {
-		return f0.cli, nil
+		return f0.cli.Close()
+	} else {
+		return nil
+	}
+}
+
+func (f0 *Flipper) StartCliSession() (*cli.CLI, error) {
+	for {
+		if f0.cli != nil {
+			break
+		}
+
+		cli, err := cli.Open(f0.port)
+
+		if err != nil {
+			return nil, err
+		}
+
+		f0.cli = cli
+
+		break
 	}
 
-	cli, err := cli.Open(f0.port)
-
-	if err != nil {
+	if _, err := f0.cli.ReadUntilTerminal(); err != nil {
 		return nil, err
 	}
 
-	f0.cli = cli
-
-	return cli, nil
+	return f0.cli, nil
 }
 
 func (f0 *Flipper) StartRpcSession() (*rpc.RPC, error) {
@@ -57,4 +73,22 @@ func (f0 *Flipper) StartRpcSession() (*rpc.RPC, error) {
 	}
 
 	return f0.rpc, err
+}
+
+func (f0 *Flipper) StopRpcSession() (*cli.CLI, error) {
+	for {
+		if f0.rpc == nil {
+			break
+		}
+
+		if err := f0.rpc.StopSession(); err != nil {
+			return nil, err
+		}
+
+		f0.rpc = nil
+
+		break
+	}
+
+	return f0.StartCliSession()
 }
