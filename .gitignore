@@ -1,0 +1,4 @@
+/dist/
+/venv/
+/protoc
+__pycache__
