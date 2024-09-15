@@ -1,4 +1,4 @@
-package flipper
+package app
 
 import (
 	"encoding/json"
