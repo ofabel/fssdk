@@ -13,12 +13,14 @@ import (
 
 type ProgressHandler func(progress float32) error
 
-const CHUNK_SIZE = 1024
+const Separator = "/"
+const ChunkSize = 1024
+const ExtStorageBasePath = "/ext"
 
 var ErrNoRegularFile = errors.New("no regular file")
 
 func (rpc *RPC) Storage_WalkFiles(path string, walker contract.FileWalker) error {
-	path = strings.TrimRight(path, "/")
+	path = strings.TrimRight(path, Separator)
 
 	request := &flipper.Main{
 		Content: &flipper.Main_StorageListRequest{
@@ -56,7 +58,7 @@ func (rpc *RPC) Storage_WalkFiles(path string, walker contract.FileWalker) error
 		if file.Type == storage.File_FILE {
 			if err := walker(&contract.File{
 				Name: file.Name,
-				Path: path + "/" + file.Name,
+				Path: path + Separator + file.Name,
 				Size: int64(file.Size),
 			}); err != nil {
 				return err
@@ -115,7 +117,7 @@ func (rpc *RPC) Storage_UploadFile(source string, target string, onProgress Prog
 	defer fp.Close()
 
 	chunk := 0
-	buffer := make([]byte, CHUNK_SIZE)
+	buffer := make([]byte, ChunkSize)
 	size := stat.Size()
 	written := int64(0)
 	progress := float32(0)
@@ -272,4 +274,65 @@ func (rpc *RPC) Storage_CheckFilesAreSame(source string, target string) (bool, e
 	} else {
 		return rpc.Storage_CheckFilesHaveSameHash(source, target)
 	}
+}
+
+func (rpc *RPC) Storage_FolderExists(path string) (bool, error) {
+	request := &flipper.Main{
+		Content: &flipper.Main_StorageStatRequest{
+			StorageStatRequest: &storage.StatRequest{
+				Path: path,
+			},
+		},
+	}
+
+	response, err := rpc.sendAndReceive(request)
+
+	if err != nil && response != nil && response.CommandStatus == flipper.CommandStatus_ERROR_STORAGE_NOT_EXIST {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return response.GetStorageStatResponse().GetFile().GetType() == storage.File_DIR, nil
+}
+
+func (rpc *RPC) Storage_CreateFolder(path string) error {
+	request := &flipper.Main{
+		Content: &flipper.Main_StorageMkdirRequest{
+			StorageMkdirRequest: &storage.MkdirRequest{
+				Path: path,
+			},
+		},
+	}
+
+	_, err := rpc.sendAndReceive(request)
+
+	return err
+}
+
+func (rpc *RPC) Storage_CreateFolderRecursive(path string) error {
+	path = strings.ReplaceAll(path, "\\", Separator)
+	path = strings.TrimPrefix(path, ExtStorageBasePath+Separator)
+
+	parts := strings.Split(path, Separator)
+
+	path = ExtStorageBasePath
+
+	for _, part := range parts {
+		path += Separator + part
+
+		if exists, err := rpc.Storage_FolderExists(path); err != nil {
+			return err
+		} else if exists {
+			continue
+		}
+
+		if err := rpc.Storage_CreateFolder(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -99,14 +99,14 @@ func (rpc *RPC) sendAndReceive(request *flipper.Main) (*flipper.Main, error) {
 
 func (rpc *RPC) readAnswer(seq uint32) (*flipper.Main, error) {
 	for {
-		data, err := rpc.readAny()
+		response, err := rpc.readAny()
 
 		if err != nil {
-			return nil, err
+			return response, err
 		}
 
-		if data.CommandId == seq {
-			return data, nil
+		if response.CommandId == seq {
+			return response, nil
 		}
 	}
 }
@@ -126,19 +126,21 @@ func (rpc *RPC) readAny() (*flipper.Main, error) {
 		return nil, err
 	}
 
-	data := &flipper.Main{}
+	response := &flipper.Main{}
 
-	err = proto.Unmarshal(raw_data, data)
+	err = proto.Unmarshal(raw_data, response)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if data.CommandStatus != flipper.CommandStatus_OK {
-		return nil, fmt.Errorf("%s", data.CommandStatus)
+	if response.CommandStatus != flipper.CommandStatus_OK {
+		err := flipper.CommandStatus_name[int32(response.CommandStatus)]
+
+		return response, fmt.Errorf("%s", err)
 	}
 
-	return data, err
+	return response, err
 }
 
 func (rpc *RPC) readVariant32() (uint32, error) {

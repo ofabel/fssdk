@@ -72,9 +72,11 @@ func ListFiles(root string, include []string, exclude []string, handler contract
 		}
 
 		if use {
+			full_path := filepath.Join(root, path)
+
 			file := &contract.File{
 				Name: filepath.Base(path),
-				Path: path,
+				Path: filepath.Clean(full_path),
 				Size: info.Size(),
 			}
 

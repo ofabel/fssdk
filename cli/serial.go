@@ -17,6 +17,7 @@ var TerminalDelimiter = []byte("\n>: ")
 var CR = byte('\r')
 var LF = byte('\n')
 var CRLF = []byte("\r\n")
+var CTRL_C = []byte("\x03")
 
 func Open(port string) (*CLI, error) {
 	connection, err := serial.Open(port,
@@ -141,4 +142,10 @@ func (cli *CLI) SendCommand(command string) error {
 	}
 
 	return nil
+}
+
+func (cli *CLI) SendCtrlC() error {
+	_, err := cli.port.Write(CTRL_C)
+
+	return err
 }

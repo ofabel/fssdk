@@ -80,4 +80,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = rpc.Storage_CreateFolderRecursive("/ext/test/a/b/c/d/e/f")
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
