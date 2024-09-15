@@ -1,15 +1,17 @@
-package sync
+package app
 
 import (
+	"fmt"
 	"io/fs"
 	"path/filepath"
 
 	"github.com/gobwas/glob"
 
+	"github.com/ofabel/fssdk/base"
 	"github.com/ofabel/fssdk/contract"
 )
 
-func ListFiles(root string, include []string, exclude []string, handler contract.FileWalker) error {
+func (f0 *Flipper) ListFiles(root string, include []string, exclude []string, handler contract.FileWalker) error {
 	includes := make([]glob.Glob, len(include))
 
 	var err error
@@ -73,10 +75,12 @@ func ListFiles(root string, include []string, exclude []string, handler contract
 
 		if use {
 			full_path := filepath.Join(root, path)
+			dir_path := filepath.Dir(full_path)
 
 			file := &contract.File{
 				Name: filepath.Base(path),
 				Path: filepath.Clean(full_path),
+				Dir:  filepath.Clean(dir_path),
 				Size: info.Size(),
 			}
 
@@ -87,4 +91,42 @@ func ListFiles(root string, include []string, exclude []string, handler contract
 
 		return nil
 	})
+}
+
+func (f0 *Flipper) SyncFiles(files []*contract.File, target string) error {
+	rpc, err := f0.GetRpcSession()
+
+	if err != nil {
+		return err
+	}
+
+	dirs := make(map[string]string)
+
+	for _, file := range files {
+		if _, ok := dirs[file.Dir]; !ok {
+			path := base.CleanPath(target + contract.DirSeparator + file.Dir)
+
+			dirs[file.Dir] = path
+
+			if err := rpc.Storage_CreateFolderRecursive(path); err != nil {
+				return err
+			}
+		}
+
+		path := base.CleanPath(target + contract.DirSeparator + file.Path)
+
+		err := rpc.Storage_UploadFile(file.Path, path, func(progress float32) error {
+			fmt.Printf("%s [%d%%]\r", path, int(progress*100))
+
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+
+		println(path + "       ")
+	}
+
+	return nil
 }

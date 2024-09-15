@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"syscall"
 
 	"github.com/albenik/go-serial/v2"
 )
@@ -43,7 +44,25 @@ func (cli *CLI) Close() error {
 }
 
 func (cli *CLI) Write(data []byte) (int, error) {
-	return cli.port.Write(data)
+	for {
+		n, err := cli.port.Write(data)
+
+		if err == nil {
+			return n, err
+		}
+
+		// ignore EINTR
+		if errors.Is(err, syscall.EINTR) {
+			return n, nil
+		}
+
+		// try again on EAGAIN
+		if errors.Is(err, syscall.EAGAIN) {
+			continue
+		}
+
+		return n, err
+	}
 }
 
 func (cli *CLI) Read(data []byte) (int, error) {
@@ -71,7 +90,9 @@ func (cli *CLI) ReadUntil(needle []byte) ([]byte, bool, error) {
 
 	for {
 		if i == len(needle) {
-			return buffer[1:], true, nil
+			end := len(buffer) - len(needle)
+
+			return buffer[1:end], true, nil
 		}
 
 		n, err := cli.port.Read(character)
@@ -131,7 +152,7 @@ func (cli *CLI) SendCommand(command string) error {
 
 	raw_command = append(raw_command, CR)
 
-	n, err := cli.port.Write(raw_command)
+	n, err := cli.Write(raw_command)
 
 	if err != nil {
 		return err
@@ -145,7 +166,7 @@ func (cli *CLI) SendCommand(command string) error {
 }
 
 func (cli *CLI) SendCtrlC() error {
-	_, err := cli.port.Write(CTRL_C)
+	_, err := cli.Write(CTRL_C)
 
 	return err
 }

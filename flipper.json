@@ -2,11 +2,11 @@
     "source": ".",
     "target": "/ext/test",
     "include": [
-        "*"
+        "*.go"
     ],
     "exclude": [
         "**.git**",
-        "*.go"
+        "/dist/"
     ],
     "run": [
         "storage tree /ext/test",

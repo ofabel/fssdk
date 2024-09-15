@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"syscall"
 
 	"github.com/ofabel/fssdk/contract"
 	"github.com/ofabel/fssdk/rpc/protobuf/flipper"
@@ -60,28 +59,14 @@ func (rpc *RPC) send(request *flipper.Main) (uint32, error) {
 
 	buffer = append(buffer, raw_request...)
 
-	for {
-		n, err := rpc.port.Write(buffer)
+	n, err := rpc.port.Write(buffer)
 
-		// ignore EINTR
-		if errors.Is(err, syscall.EINTR) {
-			break
-		}
+	if err != nil {
+		return 0, err
+	}
 
-		// try again on EAGAIN
-		if errors.Is(err, syscall.EAGAIN) {
-			continue
-		}
-
-		if err != nil {
-			return 0, err
-		}
-
-		if n != len(buffer) {
-			return 0, ErrTooLittleBytesWritten
-		}
-
-		break
+	if n != len(buffer) {
+		return 0, ErrTooLittleBytesWritten
 	}
 
 	return request.CommandId, nil

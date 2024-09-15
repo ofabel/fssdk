@@ -7,7 +7,6 @@ import (
 	"github.com/ofabel/fssdk/app"
 	"github.com/ofabel/fssdk/cli"
 	"github.com/ofabel/fssdk/contract"
-	"github.com/ofabel/fssdk/sync"
 )
 
 func main() {
@@ -31,7 +30,7 @@ func main() {
 
 	defer app.Close()
 
-	rpc, err := app.StartRpcSession()
+	rpc, err := app.GetRpcSession()
 
 	if err != nil {
 		log.Fatal(err)
@@ -61,8 +60,10 @@ func main() {
 		println(file.Path)
 	}
 
-	err = sync.ListFiles(config.Source, config.Include, config.Exclude, func(file *contract.File) error {
-		println(file.Path)
+	files = make([]*contract.File, 0, 32)
+
+	err = app.ListFiles(config.Source, config.Include, config.Exclude, func(file *contract.File) error {
+		files = append(files, file)
 
 		return nil
 	})
@@ -71,9 +72,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = app.SyncFiles(files, config.Target)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	err = rpc.Storage_CreateFolderRecursive("/ext/test/a/b/c/d/e/f")
 
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := app.StopRpcSession(); err != nil {
 		log.Fatal(err)
 	}
 

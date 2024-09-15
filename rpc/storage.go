@@ -13,14 +13,12 @@ import (
 
 type ProgressHandler func(progress float32) error
 
-const Separator = "/"
 const ChunkSize = 1024
-const ExtStorageBasePath = "/ext"
 
 var ErrNoRegularFile = errors.New("no regular file")
 
 func (rpc *RPC) Storage_WalkFiles(path string, walker contract.FileWalker) error {
-	path = strings.TrimRight(path, Separator)
+	path = strings.TrimRight(path, contract.DirSeparator)
 
 	request := &flipper.Main{
 		Content: &flipper.Main_StorageListRequest{
@@ -58,7 +56,8 @@ func (rpc *RPC) Storage_WalkFiles(path string, walker contract.FileWalker) error
 		if file.Type == storage.File_FILE {
 			if err := walker(&contract.File{
 				Name: file.Name,
-				Path: path + Separator + file.Name,
+				Path: path + contract.DirSeparator + file.Name,
+				Dir:  path,
 				Size: int64(file.Size),
 			}); err != nil {
 				return err
@@ -71,7 +70,7 @@ func (rpc *RPC) Storage_WalkFiles(path string, walker contract.FileWalker) error
 			continue
 		}
 
-		err := rpc.Storage_WalkFiles(path+"/"+file.Name, walker)
+		err := rpc.Storage_WalkFiles(path+contract.DirSeparator+file.Name, walker)
 
 		if err != nil {
 			return err
@@ -104,8 +103,8 @@ func (rpc *RPC) Storage_UploadFile(source string, target string, onProgress Prog
 		return ErrNoRegularFile
 	}
 
-	if same, err := rpc.Storage_CheckFilesAreSame(source, target); same || err != nil {
-		return err
+	if same, _ := rpc.Storage_CheckFilesAreSame(source, target); same {
+		return nil
 	}
 
 	fp, err := os.Open(source)
@@ -201,7 +200,7 @@ func (rpc *RPC) Storage_GetFileSize(path string) (int64, error) {
 		return 0, err
 	}
 
-	file := response.GetStorageStatResponse().File
+	file := response.GetStorageStatResponse().GetFile()
 
 	if file.Type == storage.File_DIR {
 		return 0, ErrNoRegularFile
@@ -313,15 +312,20 @@ func (rpc *RPC) Storage_CreateFolder(path string) error {
 }
 
 func (rpc *RPC) Storage_CreateFolderRecursive(path string) error {
-	path = strings.ReplaceAll(path, "\\", Separator)
-	path = strings.TrimPrefix(path, ExtStorageBasePath+Separator)
+	path = strings.ReplaceAll(path, "\\", contract.DirSeparator)
+	path = strings.TrimPrefix(path, contract.ExtStorageBasePath+contract.DirSeparator)
+	path = strings.TrimRight(path, contract.DirSeparator)
 
-	parts := strings.Split(path, Separator)
+	if exists, err := rpc.Storage_FolderExists(contract.ExtStorageBasePath + contract.DirSeparator + path); exists || err != nil {
+		return err
+	}
 
-	path = ExtStorageBasePath
+	parts := strings.Split(path, contract.DirSeparator)
+
+	path = contract.ExtStorageBasePath
 
 	for _, part := range parts {
-		path += Separator + part
+		path += contract.DirSeparator + part
 
 		if exists, err := rpc.Storage_FolderExists(path); err != nil {
 			return err

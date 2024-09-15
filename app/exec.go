@@ -5,7 +5,7 @@ const CommandCtrlC = "<CTRL+C>"
 type ExecCallback func(command string, output []byte, err error) (bool, error)
 
 func (f0 *Flipper) RunCommands(commands []string, callback ExecCallback) error {
-	cli, err := f0.StopRpcSession()
+	cli, err := f0.GetCliSession()
 
 	if err != nil {
 		return err

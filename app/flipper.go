@@ -1,9 +1,13 @@
 package app
 
 import (
+	"errors"
+
 	"github.com/ofabel/fssdk/cli"
 	"github.com/ofabel/fssdk/rpc"
 )
+
+var ErrRpcSessionActive = errors.New("RPC session is active")
 
 type Flipper struct {
 	port string
@@ -27,21 +31,21 @@ func (f0 *Flipper) Close() error {
 	}
 }
 
-func (f0 *Flipper) StartCliSession() (*cli.CLI, error) {
-	for {
-		if f0.cli != nil {
-			break
-		}
+func (f0 *Flipper) GetCliSession() (*cli.CLI, error) {
+	if f0.rpc != nil {
+		return nil, ErrRpcSessionActive
+	}
 
-		cli, err := cli.Open(f0.port)
+	if f0.cli != nil {
+		return f0.cli, nil
+	}
 
-		if err != nil {
-			return nil, err
-		}
+	var err error
 
-		f0.cli = cli
+	f0.cli, err = cli.Open(f0.port)
 
-		break
+	if err != nil {
+		return nil, err
 	}
 
 	if _, err := f0.cli.ReadUntilTerminal(); err != nil {
@@ -51,12 +55,12 @@ func (f0 *Flipper) StartCliSession() (*cli.CLI, error) {
 	return f0.cli, nil
 }
 
-func (f0 *Flipper) StartRpcSession() (*rpc.RPC, error) {
+func (f0 *Flipper) GetRpcSession() (*rpc.RPC, error) {
 	if f0.rpc != nil {
 		return f0.rpc, nil
 	}
 
-	if _, err := f0.StartCliSession(); err != nil {
+	if _, err := f0.GetCliSession(); err != nil {
 		return nil, err
 	}
 
@@ -75,20 +79,24 @@ func (f0 *Flipper) StartRpcSession() (*rpc.RPC, error) {
 	return f0.rpc, err
 }
 
-func (f0 *Flipper) StopRpcSession() (*cli.CLI, error) {
-	for {
-		if f0.rpc == nil {
-			break
-		}
-
-		if err := f0.rpc.StopSession(); err != nil {
-			return nil, err
-		}
-
-		f0.rpc = nil
-
-		break
+func (f0 *Flipper) StopRpcSession() error {
+	if f0.rpc == nil {
+		return nil
 	}
 
-	return f0.StartCliSession()
+	if err := f0.rpc.StopSession(); err != nil {
+		return err
+	}
+
+	f0.rpc = nil
+
+	cli, err := f0.GetCliSession()
+
+	if err != nil {
+		return err
+	}
+
+	_, err = cli.ReadUntilTerminal()
+
+	return err
 }
