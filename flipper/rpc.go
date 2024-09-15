@@ -50,10 +50,12 @@ func (f0 *Flipper) send(request *flipper.Main) (uint32, error) {
 	for {
 		n, err := f0.port.Write(buffer)
 
+		// ignore EINTR
 		if errors.Is(err, syscall.EINTR) {
-			continue
+			break
 		}
 
+		// try again on EAGAIN
 		if errors.Is(err, syscall.EAGAIN) {
 			continue
 		}

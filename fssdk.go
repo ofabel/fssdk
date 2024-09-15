@@ -31,11 +31,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	files := make([]*flipper.File, 0, 128)
-
-	err = f0.WalkStorageFiles("/ext/test", func(file *flipper.File) {
-		files = append(files, file)
+	f0.UploadFile("huge.jpg", "/ext/test/huge.jpg", func(progress float32) {
+		fmt.Printf("%d%%\r", int(progress*100))
 	})
+
+	files, err := f0.GetTree("/ext/test")
 
 	if err != nil {
 		log.Fatal(err)
