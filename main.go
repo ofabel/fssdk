@@ -6,16 +6,18 @@ import (
 
 	"github.com/ofabel/fssdk/app"
 	"github.com/ofabel/fssdk/cli"
+	"github.com/ofabel/fssdk/contract"
+	"github.com/ofabel/fssdk/sync"
 )
 
 func main() {
-	c, err := app.GetConfigFromFile("flipper.json")
+	config, err := app.GetConfigFromFile("flipper.json")
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	println(c.Source)
+	println(config.Source)
 
 	port, err := cli.GetFlipperPort()
 
@@ -47,8 +49,10 @@ func main() {
 		return
 	}
 
-	err = rpc.Storage_UploadFile("main.go", "/ext/test/huge.jpg", func(progress float32) {
+	err = rpc.Storage_UploadFile("main.go", "/ext/test/huge.jpg", func(progress float32) error {
 		fmt.Printf("%d%%\r", int(progress*100))
+
+		return nil
 	})
 
 	if err != nil {
@@ -65,5 +69,15 @@ func main() {
 
 	for _, file := range files {
 		println(file.Path)
+	}
+
+	err = sync.ListFiles(config.Source, config.Include, config.Exclude, func(file *contract.File) error {
+		println(file.Path)
+
+		return nil
+	})
+
+	if err != nil {
+		log.Fatal(err)
 	}
 }

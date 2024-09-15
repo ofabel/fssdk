@@ -4,6 +4,7 @@ go 1.22.6
 
 require (
 	github.com/albenik/go-serial/v2 v2.6.1
+	github.com/gobwas/glob v0.2.3
 	google.golang.org/protobuf v1.34.2
 )
 

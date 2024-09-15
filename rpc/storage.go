@@ -6,24 +6,18 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ofabel/fssdk/contract"
 	"github.com/ofabel/fssdk/rpc/protobuf/flipper"
 	"github.com/ofabel/fssdk/rpc/protobuf/storage"
 )
 
-type File struct {
-	Name string
-	Path string
-	Size uint32
-}
-
-type FileWalker func(file *File)
-type ProgressHandler func(progress float32)
+type ProgressHandler func(progress float32) error
 
 const CHUNK_SIZE = 1024
 
 var ErrNoRegularFile = errors.New("no regular file")
 
-func (rpc *RPC) Storage_WalkFiles(path string, walker FileWalker) error {
+func (rpc *RPC) Storage_WalkFiles(path string, walker contract.FileWalker) error {
 	path = strings.TrimRight(path, "/")
 
 	request := &flipper.Main{
@@ -60,11 +54,13 @@ func (rpc *RPC) Storage_WalkFiles(path string, walker FileWalker) error {
 
 	for _, file := range collected_files {
 		if file.Type == storage.File_FILE {
-			walker(&File{
+			if err := walker(&contract.File{
 				Name: file.Name,
 				Path: path + "/" + file.Name,
-				Size: file.Size,
-			})
+				Size: int64(file.Size),
+			}); err != nil {
+				return err
+			}
 
 			continue
 		}
@@ -83,11 +79,13 @@ func (rpc *RPC) Storage_WalkFiles(path string, walker FileWalker) error {
 	return nil
 }
 
-func (rpc *RPC) Storage_GetTree(path string) ([]*File, error) {
-	files := make([]*File, 0, 32)
+func (rpc *RPC) Storage_GetTree(path string) ([]*contract.File, error) {
+	files := make([]*contract.File, 0, 32)
 
-	err := rpc.Storage_WalkFiles(path, func(file *File) {
+	err := rpc.Storage_WalkFiles(path, func(file *contract.File) error {
 		files = append(files, file)
+
+		return nil
 	})
 
 	return files, err
@@ -158,7 +156,9 @@ func (rpc *RPC) Storage_UploadFile(source string, target string, onProgress Prog
 
 		progress = float32(written) / float32(size)
 
-		onProgress(progress)
+		if err := onProgress(progress); err != nil {
+			return err
+		}
 	}
 
 	_, err = rpc.readAnswer(request.CommandId)

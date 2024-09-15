@@ -2,10 +2,11 @@
     "source": ".",
     "target": "/ext/test",
     "include": [
-        "**/*.js"
+        "*"
     ],
     "exclude": [
-        "**/*.go"
+        "**.git**",
+        "*.go"
     ],
     "run": []
 }
