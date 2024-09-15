@@ -2,6 +2,7 @@ package flipper
 
 import (
 	"errors"
+	"io"
 	"os"
 	"strings"
 
@@ -103,11 +104,17 @@ func (f0 *Flipper) UploadFile(source string, target string, onProgress ProgressH
 		return ErrNoRegularFile
 	}
 
+	if same, err := f0.CheckFilesAreSame(source, target); same || err != nil {
+		return err
+	}
+
 	fp, err := os.Open(source)
 
 	if err != nil {
 		return err
 	}
+
+	defer fp.Close()
 
 	chunk := 0
 	buffer := make([]byte, CHUNK_SIZE)
@@ -130,12 +137,12 @@ func (f0 *Flipper) UploadFile(source string, target string, onProgress ProgressH
 	for {
 		chunk, err = fp.Read(buffer)
 
-		if err != nil {
+		if err == io.EOF {
 			break
 		}
 
-		if chunk == 0 {
-			break
+		if err != nil {
+			return err
 		}
 
 		written += int64(chunk)
@@ -146,7 +153,7 @@ func (f0 *Flipper) UploadFile(source string, target string, onProgress ProgressH
 		_, err = f0.send(request)
 
 		if err != nil {
-			break
+			return err
 		}
 
 		progress = float32(written) / float32(size)
@@ -154,13 +161,115 @@ func (f0 *Flipper) UploadFile(source string, target string, onProgress ProgressH
 		onProgress(progress)
 	}
 
-	fp.Close()
-
-	if err != nil {
-		return err
-	}
-
 	_, err = f0.readAnswer(request.CommandId)
 
 	return err
+}
+
+func (f0 *Flipper) GetChecksum(path string) (string, error) {
+	request := &flipper.Main{
+		Content: &flipper.Main_StorageMd5SumRequest{
+			StorageMd5SumRequest: &storage.Md5SumRequest{
+				Path: path,
+			},
+		},
+	}
+
+	response, err := f0.sendAndReceive(request)
+
+	if err != nil {
+		return "", err
+	}
+
+	return response.GetStorageMd5SumResponse().Md5Sum, nil
+}
+
+func (f0 *Flipper) GetFileSize(path string) (int64, error) {
+	request := &flipper.Main{
+		Content: &flipper.Main_StorageStatRequest{
+			StorageStatRequest: &storage.StatRequest{
+				Path: path,
+			},
+		},
+	}
+
+	response, err := f0.sendAndReceive(request)
+
+	if err != nil {
+		return 0, err
+	}
+
+	file := response.GetStorageStatResponse().File
+
+	if file.Type == storage.File_DIR {
+		return 0, ErrNoRegularFile
+	}
+
+	return int64(file.Size), nil
+}
+
+func (f0 *Flipper) CheckFilesHaveSameSize(source string, target string) (bool, error) {
+	stat, err := os.Stat(source)
+
+	if err != nil {
+		return false, err
+	}
+
+	if !stat.Mode().IsRegular() {
+		return false, ErrNoRegularFile
+	}
+
+	source_size := stat.Size()
+
+	target_size, err := f0.GetFileSize(target)
+
+	if err != nil {
+		return false, err
+	}
+
+	return source_size == target_size, nil
+}
+
+func (f0 *Flipper) CheckFilesHaveSameHash(source string, target string) (bool, error) {
+	stat, err := os.Stat(source)
+
+	if err != nil {
+		return false, err
+	}
+
+	if !stat.Mode().IsRegular() {
+		return false, ErrNoRegularFile
+	}
+
+	source_checksum, err := getLocalFileChecksum(source)
+
+	if err != nil {
+		return false, err
+	}
+
+	target_checksum, err := f0.GetChecksum(target)
+
+	if err != nil {
+		return false, err
+	}
+
+	return source_checksum == target_checksum, nil
+}
+
+func (f0 *Flipper) CheckFilesAreSame(source string, target string) (bool, error) {
+	stat, err := os.Stat(source)
+
+	if err != nil {
+		return false, err
+	}
+
+	if !stat.Mode().IsRegular() {
+		return false, ErrNoRegularFile
+	}
+
+	if stat.Size() > 1024*512 {
+		return f0.CheckFilesHaveSameSize(source, target)
+	} else {
+		return f0.CheckFilesHaveSameHash(source, target)
+	}
 }

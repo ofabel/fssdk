@@ -31,9 +31,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	f0.UploadFile("huge.jpg", "/ext/test/huge.jpg", func(progress float32) {
+	err = f0.UploadFile("fssdk.go", "/ext/test/huge.jpg", func(progress float32) {
 		fmt.Printf("%d%%\r", int(progress*100))
 	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	files, err := f0.GetTree("/ext/test")
 
