@@ -6,23 +6,33 @@ import (
 	"github.com/ofabel/fssdk/contract"
 )
 
-func CleanPath(path string) string {
-	path = strings.ReplaceAll(path, "\\", contract.DirSeparator)
-	path = strings.TrimPrefix(path, contract.ExtStorageBasePath+contract.DirSeparator)
-	path = strings.TrimRight(path, contract.DirSeparator)
+func CleanFlipperPath(path string) string {
+	clean_path := strings.ReplaceAll(path, "\\", contract.DirSeparator)
 
-	parts := strings.Split(path, contract.DirSeparator)
+	clean_path = strings.TrimPrefix(clean_path, contract.ExtStorageBasePath)
+	clean_path = strings.Trim(clean_path, contract.DirSeparator)
 
-	path = contract.ExtStorageBasePath
+	parts := strings.Split(clean_path, contract.DirSeparator)
+
+	clean_path = contract.ExtStorageBasePath
 
 	for _, part := range parts {
 		part = strings.Trim(part, " ")
 
 		if len(part) > 0 && part != contract.ThisDirectory {
-			path += contract.DirSeparator
-			path += part
+			clean_path += contract.DirSeparator
+			clean_path += part
 		}
 	}
 
-	return path
+	return clean_path
+}
+
+func CleanFlipperPathWithoutStorage(path string) string {
+	clean_path := CleanFlipperPath(path)
+
+	clean_path = strings.TrimPrefix(clean_path, contract.ExtStorageBasePath)
+	clean_path = strings.Trim(clean_path, contract.DirSeparator)
+
+	return clean_path
 }

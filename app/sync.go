@@ -11,21 +11,21 @@ import (
 	"github.com/ofabel/fssdk/contract"
 )
 
-func (f0 *Flipper) ListFiles(root string, include []string, exclude []string, handler contract.FileWalker) error {
-	includes := make([]glob.Glob, len(include))
+func (f0 *Flipper) ListFiles(root string, includes []string, excludes []string, handler contract.FileWalker) error {
+	include_globs := make([]glob.Glob, len(includes))
 
 	var err error
 
-	for i, inc := range include {
-		if includes[i], err = glob.Compile(inc); err != nil {
+	for i, inc := range includes {
+		if include_globs[i], err = glob.Compile(inc); err != nil {
 			return err
 		}
 	}
 
-	excludes := make([]glob.Glob, len(exclude))
+	exclude_globs := make([]glob.Glob, len(excludes))
 
-	for i, exc := range exclude {
-		if excludes[i], err = glob.Compile(exc); err != nil {
+	for i, exc := range excludes {
+		if exclude_globs[i], err = glob.Compile(exc); err != nil {
 			return err
 		}
 	}
@@ -36,7 +36,7 @@ func (f0 *Flipper) ListFiles(root string, include []string, exclude []string, ha
 		}
 
 		if d.IsDir() {
-			for _, exc := range excludes {
+			for _, exc := range exclude_globs {
 				if exc.Match(path) {
 					return filepath.SkipDir
 				}
@@ -57,7 +57,7 @@ func (f0 *Flipper) ListFiles(root string, include []string, exclude []string, ha
 
 		use := false
 
-		for _, inc := range includes {
+		for _, inc := range include_globs {
 			if inc.Match(path) {
 				use = true
 
@@ -65,7 +65,7 @@ func (f0 *Flipper) ListFiles(root string, include []string, exclude []string, ha
 			}
 		}
 
-		for _, exc := range excludes {
+		for _, exc := range exclude_globs {
 			if exc.Match(path) {
 				use = false
 
@@ -104,7 +104,7 @@ func (f0 *Flipper) SyncFiles(files []*contract.File, target string) error {
 
 	for _, file := range files {
 		if _, ok := dirs[file.Dir]; !ok {
-			path := base.CleanPath(target + contract.DirSeparator + file.Dir)
+			path := base.CleanFlipperPath(target + contract.DirSeparator + file.Dir)
 
 			dirs[file.Dir] = path
 
@@ -113,7 +113,7 @@ func (f0 *Flipper) SyncFiles(files []*contract.File, target string) error {
 			}
 		}
 
-		path := base.CleanPath(target + contract.DirSeparator + file.Path)
+		path := base.CleanFlipperPath(target + contract.DirSeparator + file.Path)
 
 		err := rpc.Storage_UploadFile(file.Path, path, func(progress float32) error {
 			fmt.Printf("%s [%d%%]\r", path, int(progress*100))

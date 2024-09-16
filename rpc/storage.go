@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ofabel/fssdk/base"
 	"github.com/ofabel/fssdk/contract"
 	"github.com/ofabel/fssdk/rpc/protobuf/flipper"
 	"github.com/ofabel/fssdk/rpc/protobuf/storage"
@@ -312,31 +313,48 @@ func (rpc *RPC) Storage_CreateFolder(path string) error {
 }
 
 func (rpc *RPC) Storage_CreateFolderRecursive(path string) error {
-	path = strings.ReplaceAll(path, "\\", contract.DirSeparator)
-	path = strings.TrimPrefix(path, contract.ExtStorageBasePath+contract.DirSeparator)
-	path = strings.TrimRight(path, contract.DirSeparator)
+	clean_path := base.CleanFlipperPath(path)
 
-	if exists, err := rpc.Storage_FolderExists(contract.ExtStorageBasePath + contract.DirSeparator + path); exists || err != nil {
+	if exists, err := rpc.Storage_FolderExists(clean_path); exists || err != nil {
 		return err
 	}
 
-	parts := strings.Split(path, contract.DirSeparator)
+	clean_path = base.CleanFlipperPathWithoutStorage(path)
 
-	path = contract.ExtStorageBasePath
+	parts := strings.Split(clean_path, contract.DirSeparator)
+
+	clean_path = contract.ExtStorageBasePath
 
 	for _, part := range parts {
-		path += contract.DirSeparator + part
+		clean_path += contract.DirSeparator + part
 
-		if exists, err := rpc.Storage_FolderExists(path); err != nil {
+		if exists, err := rpc.Storage_FolderExists(clean_path); err != nil {
 			return err
 		} else if exists {
 			continue
 		}
 
-		if err := rpc.Storage_CreateFolder(path); err != nil {
+		if err := rpc.Storage_CreateFolder(clean_path); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (rpc *RPC) Storage_DeleteRecursive(path string) error {
+	clean_path := base.CleanFlipperPath(path)
+
+	request := &flipper.Main{
+		Content: &flipper.Main_StorageDeleteRequest{
+			StorageDeleteRequest: &storage.DeleteRequest{
+				Path:      clean_path,
+				Recursive: true,
+			},
+		},
+	}
+
+	_, err := rpc.sendAndReceive(request)
+
+	return err
 }

@@ -60,6 +60,10 @@ func main() {
 		println(file.Path)
 	}
 
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	files = make([]*contract.File, 0, 32)
 
 	err = app.ListFiles(config.Source, config.Include, config.Exclude, func(file *contract.File) error {
