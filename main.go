@@ -40,7 +40,7 @@ func main() {
 	}
 
 	for file, state := range files {
-		fmt.Printf("%s : %v\n", file, state)
+		fmt.Printf("%s : %v\n", file, state.Status)
 	}
 
 	if err := app.StopRpcSession(); err != nil {

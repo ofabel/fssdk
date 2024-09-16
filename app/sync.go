@@ -1,11 +1,11 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/ofabel/fssdk/base"
 	"github.com/ofabel/fssdk/contract"
 )
+
+type ProgressHandler func(source *contract.File, target *contract.File, progress float32)
 
 type SyncStatus uint64
 
@@ -15,13 +15,22 @@ const (
 	SyncStatus_Orphan
 )
 
-type SyncMap map[string]SyncStatus
+type SyncFile struct {
+	Status SyncStatus
+	Source *contract.File
+	Target *contract.File
+}
+
+type SyncMap map[string]*SyncFile
 
 func (f0 *Flipper) GetSyncMap(source string, target string, includes []string, excludes []string) (SyncMap, error) {
 	sync_map := make(SyncMap)
 
 	err := base.ListFiles(source, includes, excludes, func(file *contract.File) error {
-		sync_map[file.Rel] = SyncStatus_Local
+		sync_map[file.Rel] = &SyncFile{
+			Source: file,
+			Status: SyncStatus_Local,
+		}
 
 		return nil
 	})
@@ -37,17 +46,21 @@ func (f0 *Flipper) GetSyncMap(source string, target string, includes []string, e
 	}
 
 	for _, file := range files {
-		if _, ok := sync_map[file.Rel]; ok {
-			sync_map[file.Rel] = SyncStatus_Both
+		if sync_file, ok := sync_map[file.Rel]; ok {
+			sync_file.Status = SyncStatus_Both
+			sync_file.Target = file
 		} else {
-			sync_map[file.Rel] = SyncStatus_Orphan
+			sync_map[file.Rel] = &SyncFile{
+				Target: file,
+				Status: SyncStatus_Orphan,
+			}
 		}
 	}
 
 	return sync_map, err
 }
 
-func (f0 *Flipper) SyncFiles(files []*contract.File, target string) error {
+func (f0 *Flipper) SyncFiles(files SyncMap, target string, on_progress ProgressHandler) error {
 	rpc, err := f0.GetRpcSession()
 
 	if err != nil {
@@ -57,29 +70,31 @@ func (f0 *Flipper) SyncFiles(files []*contract.File, target string) error {
 	dirs := make(map[string]string)
 
 	for _, file := range files {
-		if _, ok := dirs[file.Dir]; !ok {
-			path := base.CleanFlipperPath(target + contract.DirSeparator + file.Dir)
+		if file.Status == SyncStatus_Orphan {
+			continue
+		}
 
-			dirs[file.Dir] = path
+		local_rel_path := file.Source.Rel
 
-			if err := rpc.Storage_CreateFolderRecursive(path); err != nil {
+		if _, ok := dirs[local_rel_path]; !ok {
+			remote_path := base.CleanFlipperPath(target + contract.DirSeparator + local_rel_path)
+
+			dirs[local_rel_path] = remote_path
+
+			if err := rpc.Storage_CreateFolderRecursive(remote_path); err != nil {
 				return err
 			}
 		}
 
-		path := base.CleanFlipperPath(target + contract.DirSeparator + file.Path)
+		target_path := base.CleanFlipperPath(target + contract.DirSeparator + local_rel_path)
 
-		err := rpc.Storage_UploadFile(file.Path, path, func(progress float32) error {
-			fmt.Printf("%s [%d%%]\r", path, int(progress*100))
-
-			return nil
+		err := rpc.Storage_UploadFile(file.Source.Path, target_path, func(progress float32) {
+			on_progress(file.Source, file.Target, progress)
 		})
 
 		if err != nil {
 			return err
 		}
-
-		println(path + "       ")
 	}
 
 	return nil

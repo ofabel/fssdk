@@ -12,7 +12,7 @@ import (
 	"github.com/ofabel/fssdk/rpc/protobuf/storage"
 )
 
-type ProgressHandler func(progress float32) error
+type ProgressHandler func(progress float32)
 
 const ChunkSize = 1024
 
@@ -96,7 +96,7 @@ func (rpc *RPC) Storage_GetTree(path string) ([]*contract.File, error) {
 	return files, err
 }
 
-func (rpc *RPC) Storage_UploadFile(source string, target string, onProgress ProgressHandler) error {
+func (rpc *RPC) Storage_UploadFile(source string, target string, on_progress ProgressHandler) error {
 	stat, err := os.Stat(source)
 
 	if err != nil {
@@ -161,9 +161,7 @@ func (rpc *RPC) Storage_UploadFile(source string, target string, onProgress Prog
 
 		progress = float32(written) / float32(size)
 
-		if err := onProgress(progress); err != nil {
-			return err
-		}
+		on_progress(progress)
 	}
 
 	_, err = rpc.readAnswer(request.CommandId)
