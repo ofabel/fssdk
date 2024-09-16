@@ -60,7 +60,7 @@ func (rpc *RPC) Storage_WalkFiles(root string, path string, walker contract.File
 			if err := walker(&contract.File{
 				Name: file.Name,
 				Path: clean_path + contract.DirSeparator + file.Name,
-				Dir:  clean_path,
+				Dir:  base_path,
 				Rel:  base.CleanFlipperPathWithoutStorage(base_path + contract.DirSeparator + file.Name),
 				Size: int64(file.Size),
 			}); err != nil {
@@ -108,6 +108,8 @@ func (rpc *RPC) Storage_UploadFile(source string, target string, on_progress Pro
 	}
 
 	if same, _ := rpc.Storage_CheckFilesAreSame(source, target); same {
+		on_progress(1.0)
+
 		return nil
 	}
 

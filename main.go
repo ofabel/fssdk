@@ -39,8 +39,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for file, state := range files {
-		fmt.Printf("%s : %v\n", file, state.Status)
+	err = app.SyncFiles(files, config.Target, func(source string, target string, progress float32) {
+		if progress < 1.0 {
+			fmt.Printf("%s [%d%%]\r", target, int(100*progress))
+		} else {
+			fmt.Printf("%s         \n", target)
+		}
+	})
+
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	if err := app.StopRpcSession(); err != nil {

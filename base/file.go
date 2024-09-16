@@ -71,14 +71,19 @@ func ListFiles(root string, includes []string, excludes []string, handler contra
 		}
 
 		if use {
-			full_path := filepath.Join(root, path)
-			dir_path := filepath.Dir(full_path)
+			rel_path, err := filepath.Rel(root, path)
+
+			if err != nil {
+				return err
+			}
+
+			dir_path := filepath.Dir(rel_path)
 
 			file := &contract.File{
 				Name: filepath.Base(path),
-				Path: filepath.Clean(full_path),
+				Path: filepath.Clean(path),
 				Dir:  filepath.Clean(dir_path),
-				Rel:  filepath.Clean(path),
+				Rel:  filepath.Clean(rel_path),
 				Size: info.Size(),
 			}
 
