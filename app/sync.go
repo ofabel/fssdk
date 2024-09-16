@@ -2,95 +2,49 @@ package app
 
 import (
 	"fmt"
-	"io/fs"
-	"path/filepath"
-
-	"github.com/gobwas/glob"
 
 	"github.com/ofabel/fssdk/base"
 	"github.com/ofabel/fssdk/contract"
 )
 
-func (f0 *Flipper) ListFiles(root string, includes []string, excludes []string, handler contract.FileWalker) error {
-	include_globs := make([]glob.Glob, len(includes))
+type SyncStatus uint64
 
-	var err error
+const (
+	SyncStatus_Local SyncStatus = iota
+	SyncStatus_Both
+	SyncStatus_Orphan
+)
 
-	for i, inc := range includes {
-		if include_globs[i], err = glob.Compile(inc); err != nil {
-			return err
-		}
-	}
+type SyncMap map[string]SyncStatus
 
-	exclude_globs := make([]glob.Glob, len(excludes))
+func (f0 *Flipper) GetSyncMap(source string, target string, includes []string, excludes []string) (SyncMap, error) {
+	sync_map := make(SyncMap)
 
-	for i, exc := range excludes {
-		if exclude_globs[i], err = glob.Compile(exc); err != nil {
-			return err
-		}
-	}
-
-	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() {
-			for _, exc := range exclude_globs {
-				if exc.Match(path) {
-					return filepath.SkipDir
-				}
-			}
-
-			return nil
-		}
-
-		if !d.Type().IsRegular() {
-			return nil
-		}
-
-		info, err := d.Info()
-
-		if err != nil {
-			return err
-		}
-
-		use := false
-
-		for _, inc := range include_globs {
-			if inc.Match(path) {
-				use = true
-
-				break
-			}
-		}
-
-		for _, exc := range exclude_globs {
-			if exc.Match(path) {
-				use = false
-
-				break
-			}
-		}
-
-		if use {
-			full_path := filepath.Join(root, path)
-			dir_path := filepath.Dir(full_path)
-
-			file := &contract.File{
-				Name: filepath.Base(path),
-				Path: filepath.Clean(full_path),
-				Dir:  filepath.Clean(dir_path),
-				Size: info.Size(),
-			}
-
-			if err := handler(file); err != nil {
-				return err
-			}
-		}
+	err := base.ListFiles(source, includes, excludes, func(file *contract.File) error {
+		sync_map[file.Rel] = SyncStatus_Local
 
 		return nil
 	})
+
+	if err != nil {
+		return sync_map, err
+	}
+
+	files, err := f0.rpc.Storage_GetTree(target)
+
+	if err != nil {
+		return sync_map, err
+	}
+
+	for _, file := range files {
+		if _, ok := sync_map[file.Rel]; ok {
+			sync_map[file.Rel] = SyncStatus_Both
+		} else {
+			sync_map[file.Rel] = SyncStatus_Orphan
+		}
+	}
+
+	return sync_map, err
 }
 
 func (f0 *Flipper) SyncFiles(files []*contract.File, target string) error {

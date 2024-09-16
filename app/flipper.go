@@ -10,16 +10,18 @@ import (
 var ErrRpcSessionActive = errors.New("RPC session is active")
 
 type Flipper struct {
-	port string
-	cli  *cli.CLI
-	rpc  *rpc.RPC
+	port   string
+	config *Config
+	cli    *cli.CLI
+	rpc    *rpc.RPC
 }
 
-func New(port string) *Flipper {
+func New(port string, config *Config) *Flipper {
 	return &Flipper{
-		port: port,
-		cli:  nil,
-		rpc:  nil,
+		port:   port,
+		config: config,
+		cli:    nil,
+		rpc:    nil,
 	}
 }
 

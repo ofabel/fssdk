@@ -18,13 +18,15 @@ const ChunkSize = 1024
 
 var ErrNoRegularFile = errors.New("no regular file")
 
-func (rpc *RPC) Storage_WalkFiles(path string, walker contract.FileWalker) error {
-	path = strings.TrimRight(path, contract.DirSeparator)
+func (rpc *RPC) Storage_WalkFiles(root string, path string, walker contract.FileWalker) error {
+	root_path := base.CleanFlipperPath(root)
+	base_path := base.CleanFlipperPathWithoutStorage(path)
+	clean_path := base.CleanFlipperPath(root_path + contract.DirSeparator + base_path)
 
 	request := &flipper.Main{
 		Content: &flipper.Main_StorageListRequest{
 			StorageListRequest: &storage.ListRequest{
-				Path: path,
+				Path: clean_path,
 			},
 		},
 	}
@@ -57,8 +59,9 @@ func (rpc *RPC) Storage_WalkFiles(path string, walker contract.FileWalker) error
 		if file.Type == storage.File_FILE {
 			if err := walker(&contract.File{
 				Name: file.Name,
-				Path: path + contract.DirSeparator + file.Name,
-				Dir:  path,
+				Path: clean_path + contract.DirSeparator + file.Name,
+				Dir:  clean_path,
+				Rel:  base.CleanFlipperPathWithoutStorage(base_path + contract.DirSeparator + file.Name),
 				Size: int64(file.Size),
 			}); err != nil {
 				return err
@@ -71,7 +74,7 @@ func (rpc *RPC) Storage_WalkFiles(path string, walker contract.FileWalker) error
 			continue
 		}
 
-		err := rpc.Storage_WalkFiles(path+contract.DirSeparator+file.Name, walker)
+		err := rpc.Storage_WalkFiles(root_path, base_path+contract.DirSeparator+file.Name, walker)
 
 		if err != nil {
 			return err
@@ -84,7 +87,7 @@ func (rpc *RPC) Storage_WalkFiles(path string, walker contract.FileWalker) error
 func (rpc *RPC) Storage_GetTree(path string) ([]*contract.File, error) {
 	files := make([]*contract.File, 0, 32)
 
-	err := rpc.Storage_WalkFiles(path, func(file *contract.File) error {
+	err := rpc.Storage_WalkFiles(path, "", func(file *contract.File) error {
 		files = append(files, file)
 
 		return nil
