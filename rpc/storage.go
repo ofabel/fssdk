@@ -19,9 +19,9 @@ const ChunkSize = 1024
 var ErrNoRegularFile = errors.New("no regular file")
 
 func (rpc *RPC) Storage_WalkFiles(root string, path string, walker contract.FileWalker) error {
-	root_path := base.CleanFlipperPath(root)
-	base_path := base.CleanFlipperPathWithoutStorage(path)
-	clean_path := base.CleanFlipperPath(root_path + contract.DirSeparator + base_path)
+	root_path := base.Flipper_GetCleanPath(root)
+	base_path := base.Flipper_GetCleanPathWithoutStorage(path)
+	clean_path := base.Flipper_GetCleanPath(root_path, base_path)
 
 	request := &flipper.Main{
 		Content: &flipper.Main_StorageListRequest{
@@ -61,7 +61,7 @@ func (rpc *RPC) Storage_WalkFiles(root string, path string, walker contract.File
 				Name: file.Name,
 				Path: clean_path + contract.DirSeparator + file.Name,
 				Dir:  base_path,
-				Rel:  base.CleanFlipperPathWithoutStorage(base_path + contract.DirSeparator + file.Name),
+				Rel:  base.Flipper_GetCleanPathWithoutStorage(base_path, file.Name),
 				Size: int64(file.Size),
 			}); err != nil {
 				return err
@@ -316,13 +316,13 @@ func (rpc *RPC) Storage_CreateFolder(path string) error {
 }
 
 func (rpc *RPC) Storage_CreateFolderRecursive(path string) error {
-	clean_path := base.CleanFlipperPath(path)
+	clean_path := base.Flipper_GetCleanPath(path)
 
 	if exists, err := rpc.Storage_FolderExists(clean_path); exists || err != nil {
 		return err
 	}
 
-	clean_path = base.CleanFlipperPathWithoutStorage(path)
+	clean_path = base.Flipper_GetCleanPathWithoutStorage(path)
 
 	parts := strings.Split(clean_path, contract.DirSeparator)
 
@@ -346,7 +346,7 @@ func (rpc *RPC) Storage_CreateFolderRecursive(path string) error {
 }
 
 func (rpc *RPC) Storage_DeleteRecursive(path string) error {
-	clean_path := base.CleanFlipperPath(path)
+	clean_path := base.Flipper_GetCleanPath(path)
 
 	request := &flipper.Main{
 		Content: &flipper.Main_StorageDeleteRequest{

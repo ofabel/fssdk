@@ -1,6 +1,6 @@
 {
     "source": ".",
-    "target": "/ext/test",
+    "target": "/ext/test/a/b/c",
     "include": [
         "*.go"
     ],

@@ -6,33 +6,43 @@ import (
 	"github.com/ofabel/fssdk/contract"
 )
 
-func CleanFlipperPath(path string) string {
-	clean_path := strings.ReplaceAll(path, "\\", contract.DirSeparator)
-
-	clean_path = strings.TrimPrefix(clean_path, contract.ExtStorageBasePath)
-	clean_path = strings.Trim(clean_path, contract.DirSeparator)
-
-	parts := strings.Split(clean_path, contract.DirSeparator)
-
-	clean_path = contract.ExtStorageBasePath
+func Flipper_GetCleanPath(parts ...string) string {
+	path := ""
 
 	for _, part := range parts {
+		part = strings.ReplaceAll(part, "\\", contract.DirSeparator)
+		part = strings.Trim(part, contract.DirSeparator)
 		part = strings.Trim(part, " ")
 
-		if len(part) > 0 && part != contract.ThisDirectory {
-			clean_path += contract.DirSeparator
-			clean_path += part
+		if len(part) > 0 {
+			path += contract.DirSeparator + part
 		}
 	}
 
-	return clean_path
+	path = strings.TrimPrefix(path, contract.ExtStorageBasePath)
+	path = strings.Trim(path, contract.DirSeparator)
+
+	segments := strings.Split(path, contract.DirSeparator)
+
+	path = contract.ExtStorageBasePath
+
+	for _, segment := range segments {
+		segment = strings.Trim(segment, " ")
+
+		if len(segment) > 0 && segment != contract.ThisDirectory {
+			path += contract.DirSeparator
+			path += segment
+		}
+	}
+
+	return path
 }
 
-func CleanFlipperPathWithoutStorage(path string) string {
-	clean_path := CleanFlipperPath(path)
+func Flipper_GetCleanPathWithoutStorage(parts ...string) string {
+	path := Flipper_GetCleanPath(parts...)
 
-	clean_path = strings.TrimPrefix(clean_path, contract.ExtStorageBasePath)
-	clean_path = strings.Trim(clean_path, contract.DirSeparator)
+	path = strings.TrimPrefix(path, contract.ExtStorageBasePath)
+	path = strings.Trim(path, contract.DirSeparator)
 
-	return clean_path
+	return path
 }

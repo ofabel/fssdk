@@ -1,8 +1,11 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/ofabel/fssdk/base"
 	"github.com/ofabel/fssdk/contract"
+	"github.com/ofabel/fssdk/rpc"
 )
 
 type ProgressHandler func(source string, target string, progress float32)
@@ -41,8 +44,10 @@ func (f0 *Flipper) GetSyncMap(source string, target string, includes []string, e
 
 	files, err := f0.rpc.Storage_GetTree(target)
 
-	if err != nil {
-		return sync_map, err // TODO: handle storage not exists err
+	if err == rpc.ErrStorageNotExist {
+		return sync_map, nil
+	} else if err != nil {
+		return sync_map, err
 	}
 
 	for _, file := range files {
@@ -77,16 +82,24 @@ func (f0 *Flipper) SyncFiles(files SyncMap, target string, on_progress ProgressH
 		source_dir_path := file.Source.Dir
 
 		if _, ok := dirs[source_dir_path]; !ok {
-			target_dir_path := base.CleanFlipperPath(target + contract.DirSeparator + source_dir_path)
+			target_dir_path := base.Flipper_GetCleanPath(target, source_dir_path)
 
 			dirs[source_dir_path] = target_dir_path
 
-			if err := rpc.Storage_CreateFolderRecursive(target_dir_path); err != nil {
+			if false {
+				fmt.Printf("mkdir %s\n", target_dir_path)
+			} else if err := rpc.Storage_CreateFolderRecursive(target_dir_path); err != nil {
 				return err
 			}
 		}
 
-		target_file_path := base.CleanFlipperPath(target + contract.DirSeparator + file.Source.Rel)
+		target_file_path := base.Flipper_GetCleanPath(target, file.Source.Rel)
+
+		if false {
+			fmt.Printf("upload %s\n", target_file_path)
+
+			continue
+		}
 
 		err := rpc.Storage_UploadFile(file.Source.Path, target_file_path, func(progress float32) {
 			on_progress(file.Source.Path, target_file_path, progress)

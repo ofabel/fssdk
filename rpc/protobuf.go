@@ -3,7 +3,6 @@ package rpc
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 
 	"github.com/ofabel/fssdk/contract"
 	"github.com/ofabel/fssdk/rpc/protobuf/flipper"
@@ -116,13 +115,15 @@ func (rpc *RPC) readAny() (*flipper.Main, error) {
 	err = proto.Unmarshal(raw_data, response)
 
 	if err != nil {
-		return nil, err
+		return response, err
 	}
 
 	if response.CommandStatus != flipper.CommandStatus_OK {
-		err := flipper.CommandStatus_name[int32(response.CommandStatus)]
-
-		return response, fmt.Errorf("%s", err)
+		if err, ok := errorCodeMapping[response.CommandStatus]; ok {
+			return response, err
+		} else {
+			return response, ErrUnknown
+		}
 	}
 
 	return response, err
