@@ -4,12 +4,29 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/alexflint/go-arg"
+
 	"github.com/ofabel/fssdk/app"
 	"github.com/ofabel/fssdk/cli"
+	"github.com/ofabel/fssdk/cmd/sync"
 )
 
+var args struct {
+	Config string     `arg:"-c,--config" help:"Path to the config file." default:"flipper.json"`
+	Silent bool       `arg:"-s,--silent" help:"Don't print any output" default:"false"`
+	Sync   *sync.Args `arg:"subcommand:sync"`
+}
+
 func main() {
-	config, err := app.GetConfigFromFile("flipper.json")
+	parser := arg.MustParse(&args)
+
+	if cmd := parser.Subcommand(); cmd == nil {
+		panic(args.Config)
+	} else {
+		panic(args.Sync.DryRun)
+	}
+
+	config, err := app.GetConfigFromFile(args.Config)
 
 	if err != nil {
 		log.Fatal(err)
