@@ -345,14 +345,14 @@ func (rpc *RPC) Storage_CreateFolderRecursive(path string) error {
 	return nil
 }
 
-func (rpc *RPC) Storage_DeleteRecursive(path string) error {
+func (rpc *RPC) Storage_Delete(path string, recursive bool) error {
 	clean_path := base.Flipper_GetCleanPath(path)
 
 	request := &flipper.Main{
 		Content: &flipper.Main_StorageDeleteRequest{
 			StorageDeleteRequest: &storage.DeleteRequest{
 				Path:      clean_path,
-				Recursive: true,
+				Recursive: recursive,
 			},
 		},
 	}

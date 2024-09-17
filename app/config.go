@@ -11,6 +11,7 @@ type Orphans string
 const (
 	Orphans_Download Orphans = "download"
 	Orphans_Delete   Orphans = "delete"
+	Orphans_Ignore   Orphans = "ignore"
 )
 
 type Config struct {
@@ -38,7 +39,13 @@ func GetConfigFromFile(path string) (*Config, error) {
 		return nil, err
 	}
 
-	config := &Config{}
+	config := &Config{
+		Upload:  true,
+		Orphans: Orphans_Ignore,
+		Include: make([]string, 0, 1),
+		Exclude: make([]string, 0, 1),
+		Run:     make([]string, 0, 1),
+	}
 
 	err = json.Unmarshal(data, config)
 
