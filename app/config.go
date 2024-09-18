@@ -4,27 +4,11 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+
+	"github.com/ofabel/fssdk/contract"
 )
 
-type Orphans string
-
-const (
-	Orphans_Download Orphans = "download"
-	Orphans_Delete   Orphans = "delete"
-	Orphans_Ignore   Orphans = "ignore"
-)
-
-type Config struct {
-	Source  string
-	Target  string
-	Upload  bool
-	Orphans Orphans
-	Include []string
-	Exclude []string
-	Run     []string
-}
-
-func GetConfigFromFile(path string) (*Config, error) {
+func getConfigFromFile(path string) (*contract.Config, error) {
 	fp, err := os.Open(path)
 
 	if err != nil {
@@ -39,9 +23,9 @@ func GetConfigFromFile(path string) (*Config, error) {
 		return nil, err
 	}
 
-	config := &Config{
+	config := &contract.Config{
 		Upload:  true,
-		Orphans: Orphans_Ignore,
+		Orphans: contract.Orphans_Ignore,
 		Include: make([]string, 0, 1),
 		Exclude: make([]string, 0, 1),
 		Run:     make([]string, 0, 1),

@@ -14,15 +14,24 @@ var ErrTooManyBytes = errors.New("too many bytes when decoding varint")
 var ErrTooLittleBytesWritten = errors.New("too little bytes written")
 
 type RPC struct {
-	port contract.IO
-	seq  uint32
+	port     contract.IO
+	seq      uint32
+	on_close func()
 }
 
-func New(port contract.IO) *RPC {
+func New(port contract.IO, on_close func()) *RPC {
 	return &RPC{
-		port: port,
-		seq:  0,
+		port:     port,
+		seq:      0,
+		on_close: on_close,
 	}
+}
+
+func (rpc *RPC) Close() {
+	rpc.on_close()
+
+	rpc.port = nil
+	rpc.seq = 0
 }
 
 func (rpc *RPC) getNextSeq() uint32 {

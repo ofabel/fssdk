@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/ofabel/fssdk/cli"
+	"github.com/ofabel/fssdk/contract"
 	"github.com/ofabel/fssdk/rpc"
 )
 
@@ -11,18 +12,9 @@ var ErrRpcSessionActive = errors.New("RPC session is active")
 
 type Flipper struct {
 	port   string
-	config *Config
+	config *contract.Config
 	cli    *cli.CLI
 	rpc    *rpc.RPC
-}
-
-func New(port string, config *Config) *Flipper {
-	return &Flipper{
-		port:   port,
-		config: config,
-		cli:    nil,
-		rpc:    nil,
-	}
 }
 
 func (f0 *Flipper) Close() error {
@@ -75,7 +67,7 @@ func (f0 *Flipper) GetRpcSession() (*rpc.RPC, error) {
 	_, found, err := f0.cli.ReadUntil(cli.CRLF)
 
 	if found && err == nil {
-		f0.rpc = rpc.New(f0.cli)
+		f0.rpc = rpc.New(f0.cli, nil)
 	}
 
 	return f0.rpc, err

@@ -15,9 +15,11 @@ func GetFlipperPort() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	if len(ports) == 0 {
 		return "", ErrNoFlipperFound
 	}
+
 	for _, port := range ports {
 		if strings.HasPrefix(port.SerialNumber, "flip_") {
 			return port.Name, nil
