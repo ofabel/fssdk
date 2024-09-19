@@ -24,7 +24,7 @@ func Main(runtime *app.Runtime, args *Args) {
 		fmt.Printf("%s%s", out, cli.TerminalDelimiter)
 	}
 
-	buffer := make([]byte, 32)
+	buffer := make([]byte, 1)
 	cmd := ""
 
 	for {
@@ -36,6 +36,8 @@ func Main(runtime *app.Runtime, args *Args) {
 			cmd = fmt.Sprintf("%s%s", cmd, buffer[0:n])
 
 			if strings.HasSuffix(cmd, "\n") {
+				cmd = strings.TrimRight(cmd, "\r\n")
+
 				session.SendCommand(cmd)
 
 				if out, err := session.ReadUntilTerminal(); err != nil {

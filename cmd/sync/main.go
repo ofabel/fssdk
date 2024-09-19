@@ -38,10 +38,11 @@ type SyncMap map[string]*SyncFile
 
 func Main(runtime *app.Runtime, args *Args) {
 	config := runtime.Config()
-	session := runtime.RPC()
 
-	source := config.Source
+	source := runtime.GetAbsolutePath(config.Source)
 	target := config.Target
+
+	session := runtime.RPC()
 
 	files, err := GetSyncMap(session, source, target, config.Include, config.Exclude)
 

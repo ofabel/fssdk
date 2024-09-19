@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"strings"
 	"syscall"
 
 	"github.com/albenik/go-serial/v2"
@@ -148,8 +149,9 @@ func (cli *CLI) ReadLine() ([]byte, error) {
 }
 
 func (cli *CLI) SendCommand(command string) error {
-	raw_command := []byte(command)
+	command = strings.TrimRight(command, string(CRLF))
 
+	raw_command := []byte(command)
 	raw_command = append(raw_command, CR)
 
 	n, err := cli.Write(raw_command)

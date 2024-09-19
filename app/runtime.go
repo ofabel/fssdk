@@ -1,12 +1,15 @@
 package app
 
 import (
+	"path/filepath"
+
 	"github.com/ofabel/fssdk/cli"
 	"github.com/ofabel/fssdk/contract"
 	"github.com/ofabel/fssdk/rpc"
 )
 
 type Runtime struct {
+	root_path   string
 	config_file string
 	quiet       bool
 	port        string
@@ -35,6 +38,33 @@ func (r *Runtime) Destroy() {
 
 func (r *Runtime) Quiet() bool {
 	return r.quiet
+}
+
+func (r *Runtime) Root() string {
+	if len(r.root_path) > 0 {
+		return r.root_path
+	}
+
+	dir := filepath.Dir(r.config_file)
+
+	var err error
+
+	if r.root_path, err = filepath.Abs(dir); err != nil {
+		panic(err)
+	}
+
+	return r.root_path
+}
+
+func (r *Runtime) GetAbsolutePath(path string) string {
+	if filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
+
+	root := r.Root()
+	full_path := filepath.Join(root, path)
+
+	return filepath.Clean(full_path)
 }
 
 func (r *Runtime) Config() *contract.Config {
