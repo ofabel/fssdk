@@ -73,15 +73,13 @@ func Main(runtime *app.Runtime, args *Args) {
 				size = len(js)
 			}
 
-			if size == 1 && len(is) != len(js) {
-				return false
-			}
-
 			for p := range size {
 				if is[p] == js[p] {
 					continue
-				} else {
+				} else if p < size-1 {
 					return is[p] < js[p]
+				} else {
+					return len(is) < len(js)
 				}
 			}
 
