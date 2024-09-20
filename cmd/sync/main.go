@@ -2,14 +2,11 @@ package sync
 
 import (
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/ofabel/fssdk/app"
 	"github.com/ofabel/fssdk/base"
 	"github.com/ofabel/fssdk/contract"
 	"github.com/ofabel/fssdk/rpc"
-	"golang.org/x/exp/maps"
 )
 
 const Command = "sync"
@@ -17,19 +14,20 @@ const Command = "sync"
 type Args struct {
 	DryRun bool   `arg:"-d,--dry-run" help:"Do a dry run, don't upload, download or delete any files." default:"false"`
 	Force  bool   `arg:"-f,--force" help:"Upload without checks." default:"false"`
-	List   bool   `arg:"-l,--list" help:"List matching local files." default:"false"`
+	List   bool   `arg:"-l,--list" help:"List matching files." default:"false"`
+	Local  bool   `arg:"-o,--local" help:"List matching files from local source only." default:"false"`
 	Source string `arg:"-s,--source" help:"Sync all from source to target. If source is a folder, target is also treated as a folder."`
 	Target string `arg:"-t,--target" help:"Sync all from source to target."`
 }
 
 type ProgressHandler func(source string, target string, progress float32)
 
-type SyncStatus uint64
+type SyncStatus string
 
 const (
-	SyncStatus_Local SyncStatus = iota
-	SyncStatus_Both
-	SyncStatus_Orphan
+	SyncStatus_Local  SyncStatus = "< "
+	SyncStatus_Both   SyncStatus = "<>"
+	SyncStatus_Orphan SyncStatus = " >"
 )
 
 type SyncFile struct {
@@ -58,41 +56,31 @@ func Main(runtime *app.Runtime, args *Args) {
 
 	source = runtime.GetAbsolutePath(source)
 
-	if args.List {
+	if args.Local {
 		config := runtime.Config()
 
 		sync_map, err := GetLocalSyncMap(source, config.Include, config.Exclude)
-		files := maps.Keys(sync_map)
-
-		sort.Slice(files, func(i, j int) bool { // TODO: use https://pkg.go.dev/slices#SortStableFunc
-			is := strings.Split(files[i], "/")
-			js := strings.Split(files[j], "/")
-			size := len(is)
-
-			if len(js) < size {
-				size = len(js)
-			}
-
-			for p := range size {
-				if is[p] == js[p] {
-					continue
-				} else if p < size-1 {
-					return is[p] < js[p]
-				} else {
-					return len(is) < len(js)
-				}
-			}
-
-			return false
-		})
 
 		if err != nil {
 			panic(err)
 		}
 
-		for _, file := range files {
-			runtime.Printf("%s\n", file)
+		ListFilesFromSyncMap(runtime, sync_map)
+
+		return
+	}
+
+	if args.List {
+		config := runtime.Config()
+		session := runtime.RPC()
+
+		sync_map, err := GetSyncMap(session, source, target, config.Include, config.Exclude)
+
+		if err != nil {
+			panic(err)
 		}
+
+		ListFilesFromSyncMap(runtime, sync_map)
 
 		return
 	}
