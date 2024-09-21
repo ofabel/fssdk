@@ -4,9 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ofabel/fssdk/app"
-	"github.com/ofabel/fssdk/base"
-	"github.com/ofabel/fssdk/contract"
-	"github.com/ofabel/fssdk/rpc"
 )
 
 const Command = "sync"
@@ -19,24 +16,6 @@ type Args struct {
 	Source string `arg:"-s,--source" help:"Sync all from source to target. If source is a folder, target is also treated as a folder."`
 	Target string `arg:"-t,--target" help:"Sync all from source to target."`
 }
-
-type ProgressHandler func(source string, target string, progress float32)
-
-type SyncStatus string
-
-const (
-	SyncStatus_Local  SyncStatus = "< "
-	SyncStatus_Both   SyncStatus = "<>"
-	SyncStatus_Orphan SyncStatus = " >"
-)
-
-type SyncFile struct {
-	Status SyncStatus
-	Source *contract.File
-	Target *contract.File
-}
-
-type SyncMap map[string]*SyncFile
 
 func Main(runtime *app.Runtime, args *Args) {
 	source := args.Source
@@ -85,10 +64,7 @@ func Main(runtime *app.Runtime, args *Args) {
 		return
 	}
 
-	panic("done")
-
 	session := runtime.RPC()
-
 	config := runtime.Config()
 
 	files, err := GetSyncMap(session, source, target, config.Include, config.Exclude)
@@ -97,100 +73,42 @@ func Main(runtime *app.Runtime, args *Args) {
 		panic(err)
 	}
 
-	if err := SyncFiles(session, files, target, func(source string, target string, progress float32) {
-		if progress < 1 {
-			fmt.Printf("%s [%d%%]\r", target, int(progress*100))
+	on_progress := func(state UploadProgressState, source string, target string, progress float32) {
+		if state&UploadProgressState_Skip > 0 {
+			status := formatStatus("> [SKIP]")
+
+			runtime.Printf("%s%s\n", status, target)
+		} else if state&UploadProgressState_Upload > 0 && state&UploadProgressState_DryRun > 0 {
+			status := formatStatus("> [UPLD]")
+
+			runtime.Printf("%s%s\n", status, target)
+		} else if progress < 1 {
+			status := fmt.Sprintf("> [%d%%]", int(progress*100))
+			status = formatStatus(status)
+
+			runtime.Printf("%s%s\r", status, target)
 		} else {
-			fmt.Printf("%s [100%%]\n", target)
+			status := formatStatus("> [100%]")
+
+			runtime.Printf("%s%s\n", status, target)
 		}
-	}); err != nil {
+	}
+
+	on_make_folder := func(dry_run bool, source string, target string) {
+		status := formatStatus("> [MKFD]")
+
+		runtime.Printf("%s%s\n", status, target)
+	}
+
+	if err := SyncFiles(session, files, target, args.DryRun, on_progress, on_make_folder); err != nil {
 		panic(err)
 	}
 }
 
-func GetLocalSyncMap(path string, includes []string, excludes []string) (SyncMap, error) {
-	sync_map := make(SyncMap)
-
-	err := base.ListFiles(path, includes, excludes, func(file *contract.File) error {
-		sync_map[file.Rel] = &SyncFile{
-			Source: file,
-			Status: SyncStatus_Local,
-		}
-
-		return nil
-	})
-
-	return sync_map, err
-}
-
-func GetSyncMap(session *rpc.RPC, source string, target string, includes []string, excludes []string) (SyncMap, error) {
-	sync_map, err := GetLocalSyncMap(source, includes, excludes)
-
-	if err != nil {
-		return sync_map, err
+func formatStatus(status string) string {
+	for len(status) < 10 {
+		status += " "
 	}
 
-	files, err := session.Storage_GetTree(target)
-
-	if err == rpc.ErrStorageNotExist {
-		return sync_map, nil
-	} else if err != nil {
-		return sync_map, err
-	}
-
-	for _, file := range files {
-		if sync_file, ok := sync_map[file.Rel]; ok {
-			sync_file.Status = SyncStatus_Both
-			sync_file.Target = file
-		} else {
-			sync_map[file.Rel] = &SyncFile{
-				Target: file,
-				Status: SyncStatus_Orphan,
-			}
-		}
-	}
-
-	return sync_map, err
-}
-
-func SyncFiles(session *rpc.RPC, files SyncMap, target string, on_progress ProgressHandler) error {
-	dirs := make(map[string]string)
-
-	for _, file := range files {
-		if file.Status == SyncStatus_Orphan {
-			continue
-		}
-
-		source_dir_path := file.Source.Dir
-
-		if _, ok := dirs[source_dir_path]; !ok {
-			target_dir_path := base.Flipper_GetCleanPath(target, source_dir_path)
-
-			dirs[source_dir_path] = target_dir_path
-
-			if false {
-				fmt.Printf("mkdir %s\n", target_dir_path)
-			} else if err := session.Storage_CreateFolderRecursive(target_dir_path); err != nil {
-				return err
-			}
-		}
-
-		target_file_path := base.Flipper_GetCleanPath(target, file.Source.Rel)
-
-		if false {
-			fmt.Printf("upload %s\n", target_file_path)
-
-			continue
-		}
-
-		err := session.Storage_UploadFile(file.Source.Path, target_file_path, func(progress float32) {
-			on_progress(file.Source.Path, target_file_path, progress)
-		})
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return status
 }

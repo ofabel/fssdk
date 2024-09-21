@@ -32,9 +32,11 @@ func ListFiles(root string, includes []string, excludes []string, handler contra
 			return err
 		}
 
+		path_to_glob := filepath.ToSlash(path)
+
 		if d.IsDir() {
 			for _, exc := range exclude_globs {
-				if exc.Match(path) {
+				if exc.Match(path_to_glob) {
 					return filepath.SkipDir
 				}
 			}
@@ -55,7 +57,7 @@ func ListFiles(root string, includes []string, excludes []string, handler contra
 		use := false
 
 		for _, inc := range include_globs {
-			if inc.Match(path) {
+			if inc.Match(path_to_glob) {
 				use = true
 
 				break
@@ -63,7 +65,7 @@ func ListFiles(root string, includes []string, excludes []string, handler contra
 		}
 
 		for _, exc := range exclude_globs {
-			if exc.Match(path) {
+			if exc.Match(path_to_glob) {
 				use = false
 
 				break
@@ -81,9 +83,9 @@ func ListFiles(root string, includes []string, excludes []string, handler contra
 
 			file := &contract.File{
 				Name: filepath.Base(path),
-				Path: filepath.Clean(path),
-				Dir:  filepath.Clean(dir_path),
-				Rel:  filepath.Clean(rel_path),
+				Path: cleanPath(path),
+				Dir:  cleanPath(dir_path),
+				Rel:  cleanPath(rel_path),
 				Size: info.Size(),
 			}
 
@@ -94,4 +96,10 @@ func ListFiles(root string, includes []string, excludes []string, handler contra
 
 		return nil
 	})
+}
+
+func cleanPath(path string) string {
+	clean_path := filepath.Clean(path)
+
+	return filepath.ToSlash(clean_path)
 }

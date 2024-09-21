@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/ofabel/fssdk/base"
@@ -12,7 +13,7 @@ import (
 	"github.com/ofabel/fssdk/rpc/protobuf/storage"
 )
 
-type ProgressHandler func(progress float32)
+type ProgressHandler func(skip bool, progress float32)
 
 const ChunkSize = 1024
 
@@ -97,7 +98,8 @@ func (rpc *RPC) Storage_GetTree(path string) ([]*contract.File, error) {
 }
 
 func (rpc *RPC) Storage_UploadFile(source string, target string, on_progress ProgressHandler) error {
-	stat, err := os.Stat(source)
+	source_path := filepath.FromSlash(source)
+	stat, err := os.Stat(source_path)
 
 	if err != nil {
 		return err
@@ -107,13 +109,13 @@ func (rpc *RPC) Storage_UploadFile(source string, target string, on_progress Pro
 		return ErrNoRegularFile
 	}
 
-	if same, _ := rpc.Storage_CheckFilesAreSame(source, target); same {
-		on_progress(1.0)
+	if same, _ := rpc.Storage_CheckFilesAreSame(source_path, target); same {
+		on_progress(true, 1.0)
 
 		return nil
 	}
 
-	fp, err := os.Open(source)
+	fp, err := os.Open(source_path)
 
 	if err != nil {
 		return err
@@ -163,7 +165,7 @@ func (rpc *RPC) Storage_UploadFile(source string, target string, on_progress Pro
 
 		progress = float32(written) / float32(size)
 
-		on_progress(progress)
+		on_progress(false, progress)
 	}
 
 	_, err = rpc.readAnswer(request.CommandId)
@@ -301,6 +303,28 @@ func (rpc *RPC) Storage_FolderExists(path string) (bool, error) {
 	return response.GetStorageStatResponse().GetFile().GetType() == storage.File_DIR, nil
 }
 
+func (rpc *RPC) Storage_FileExists(path string) (bool, error) {
+	request := &flipper.Main{
+		Content: &flipper.Main_StorageStatRequest{
+			StorageStatRequest: &storage.StatRequest{
+				Path: path,
+			},
+		},
+	}
+
+	response, err := rpc.sendAndReceive(request)
+
+	if err != nil && response != nil && response.CommandStatus == flipper.CommandStatus_ERROR_STORAGE_NOT_EXIST {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return response.GetStorageStatResponse().GetFile().GetType() == storage.File_FILE, nil
+}
+
 func (rpc *RPC) Storage_CreateFolder(path string) error {
 	request := &flipper.Main{
 		Content: &flipper.Main_StorageMkdirRequest{
@@ -315,11 +339,11 @@ func (rpc *RPC) Storage_CreateFolder(path string) error {
 	return err
 }
 
-func (rpc *RPC) Storage_CreateFolderRecursive(path string) error {
+func (rpc *RPC) Storage_CreateFolderRecursive(path string) (bool, error) {
 	clean_path := base.Flipper_GetCleanPath(path)
 
 	if exists, err := rpc.Storage_FolderExists(clean_path); exists || err != nil {
-		return err
+		return false, err
 	}
 
 	clean_path = base.Flipper_GetCleanPathWithoutStorage(path)
@@ -332,17 +356,17 @@ func (rpc *RPC) Storage_CreateFolderRecursive(path string) error {
 		clean_path += contract.DirSeparator + part
 
 		if exists, err := rpc.Storage_FolderExists(clean_path); err != nil {
-			return err
+			return true, err
 		} else if exists {
 			continue
 		}
 
 		if err := rpc.Storage_CreateFolder(clean_path); err != nil {
-			return err
+			return true, err
 		}
 	}
 
-	return nil
+	return true, nil
 }
 
 func (rpc *RPC) Storage_Delete(path string, recursive bool) error {
