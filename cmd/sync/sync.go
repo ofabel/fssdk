@@ -1,20 +1,24 @@
 package sync
 
 import (
+	"errors"
+	"slices"
+
 	"github.com/ofabel/fssdk/base"
 	"github.com/ofabel/fssdk/contract"
 	"github.com/ofabel/fssdk/rpc"
+	"golang.org/x/exp/maps"
 )
 
-type UploadProgressState int
+type TransferDirection string
 
 const (
-	UploadProgressState_DryRun UploadProgressState = 1 << iota
-	UploadProgressState_Upload
-	UploadProgressState_Skip
+	TransferDirection_Upload   TransferDirection = ">"
+	TransferDirection_Download TransferDirection = "<"
+	TransferDirection_None     TransferDirection = "-"
 )
 
-type ProgressHandler func(state UploadProgressState, source string, target string, progress float32)
+type ProgressHandler func(direction TransferDirection, skip bool, dry_run bool, source string, target string, progress float32)
 type MakeFolderHandler func(dry_run bool, source string, target string)
 
 type SyncStatus string
@@ -32,6 +36,8 @@ type SyncFile struct {
 }
 
 type SyncMap map[string]*SyncFile
+
+var ErrFileUnknown = errors.New("unknown file")
 
 func GetLocalSyncMap(path string, includes []string, excludes []string) (SyncMap, error) {
 	sync_map := make(SyncMap)
@@ -78,11 +84,23 @@ func GetSyncMap(session *rpc.RPC, source string, target string, includes []strin
 	return sync_map, err
 }
 
-func SyncFiles(session *rpc.RPC, files SyncMap, target string, dry_run bool, on_progress ProgressHandler, on_make_folder MakeFolderHandler) error {
+func SyncFiles(session *rpc.RPC, files SyncMap, source string, target string, orphans contract.Orphans, dry_run bool, on_progress ProgressHandler, on_make_folder MakeFolderHandler) error {
 	dirs := make(map[string]string)
+	keys := maps.Keys(files)
 
-	for _, file := range files {
+	slices.SortStableFunc(keys, compareFiles)
+	slices.Reverse(keys)
+
+	for _, key := range keys {
+		file, found := files[key]
+
+		if !found {
+			return ErrFileUnknown
+		}
+
 		if file.Status == SyncStatus_Orphan {
+			handleOrphan(session, file, source, target, orphans, dry_run, on_progress, on_make_folder)
+
 			continue
 		}
 
@@ -122,28 +140,36 @@ func SyncFiles(session *rpc.RPC, files SyncMap, target string, dry_run bool, on_
 		if !dry_run {
 			// NOP
 		} else if same {
-			on_progress(UploadProgressState_DryRun|UploadProgressState_Skip, file.Source.Path, target_file_path, 1)
+			on_progress(TransferDirection_Upload, true, true, file.Source.Path, target_file_path, 1)
 
 			continue
 		} else {
-			on_progress(UploadProgressState_DryRun|UploadProgressState_Upload, file.Source.Path, target_file_path, 1)
+			on_progress(TransferDirection_Upload, false, true, file.Source.Path, target_file_path, 1)
 
 			continue
 		}
 
 		err := session.Storage_UploadFile(file.Source.Path, target_file_path, func(skip bool, progress float32) {
-			status := UploadProgressState_Upload
-
-			if skip {
-				status = UploadProgressState_Skip
-			}
-
-			on_progress(status, file.Source.Path, target_file_path, progress)
+			on_progress(TransferDirection_Upload, skip, false, file.Source.Path, target_file_path, progress)
 		})
 
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func handleOrphan(session *rpc.RPC, file *SyncFile, source string, target string, orphans contract.Orphans, dry_run bool, on_progress ProgressHandler, on_make_folder MakeFolderHandler) error {
+	if !dry_run {
+		// NOP
+	} else if orphans == contract.Orphans_Delete {
+		on_progress(TransferDirection_Upload, false, true, "", file.Target.Path, 1)
+	} else if orphans == contract.Orphans_Download {
+		on_progress(TransferDirection_Download, false, true, "", file.Target.Path, 1)
+	} else if orphans == contract.Orphans_Ignore {
+		on_progress(TransferDirection_None, true, true, "", file.Target.Path, 1)
 	}
 
 	return nil

@@ -73,42 +73,79 @@ func Main(runtime *app.Runtime, args *Args) {
 		panic(err)
 	}
 
-	on_progress := func(state UploadProgressState, source string, target string, progress float32) {
-		if state&UploadProgressState_Skip > 0 {
-			status := formatStatus("> [SKIP]")
+	width := getMaxWidth(files)
 
-			runtime.Printf("%s%s\n", status, target)
-		} else if state&UploadProgressState_Upload > 0 && state&UploadProgressState_DryRun > 0 {
-			status := formatStatus("> [UPLD]")
+	on_progress := func(direction TransferDirection, skip bool, dry_run bool, source string, target string, progress float32) {
+		source = padRight(source, width)
 
-			runtime.Printf("%s%s\n", status, target)
-		} else if progress < 1 {
-			status := fmt.Sprintf("> [%d%%]", int(progress*100))
-			status = formatStatus(status)
+		// skip
+		if skip {
+			status := formatStatus("SKIP")
 
-			runtime.Printf("%s%s\r", status, target)
+			runtime.Printf("%s%s %s %s\n", status, source, direction, target)
+
+			return
+		}
+
+		// dry run upload
+		if direction == TransferDirection_Upload && dry_run {
+			status := formatStatus("UPLD")
+
+			runtime.Printf("%s%s %s %s\n", status, source, direction, target)
+
+			return
+		}
+
+		// dry run download
+		if direction == TransferDirection_Download && dry_run {
+			status := formatStatus("DNLD")
+
+			runtime.Printf("%s%s %s %s\n", status, source, direction, target)
+
+			return
+		}
+
+		// upload
+		if progress < 1 {
+			status := formatStatus("%d%%", int(progress*100))
+
+			runtime.Printf("%s%s %s %s\r", status, source, direction, target)
+
+			return
 		} else {
-			status := formatStatus("> [100%]")
+			status := formatStatus("100%%")
 
-			runtime.Printf("%s%s\n", status, target)
+			runtime.Printf("%s%s %s %s\n", status, source, direction, target)
+
+			return
 		}
 	}
 
 	on_make_folder := func(dry_run bool, source string, target string) {
-		status := formatStatus("> [MKFD]")
+		status := formatStatus("MKFD")
 
-		runtime.Printf("%s%s\n", status, target)
+		runtime.Printf("> %s%s\n", status, target)
 	}
 
-	if err := SyncFiles(session, files, target, args.DryRun, on_progress, on_make_folder); err != nil {
+	if err := SyncFiles(session, files, source, target, config.Orphans, args.DryRun, on_progress, on_make_folder); err != nil {
 		panic(err)
 	}
 }
 
-func formatStatus(status string) string {
-	for len(status) < 10 {
-		status += " "
+func formatStatus(format string, args ...any) string {
+	status := fmt.Sprintf(format, args...)
+
+	for len(status) < 4 {
+		status = " " + status
 	}
 
-	return status
+	return fmt.Sprintf("[%s]  ", status)
+}
+
+func padRight(str string, width int) string {
+	for len(str) < width {
+		str += " "
+	}
+
+	return str
 }

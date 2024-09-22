@@ -11,7 +11,6 @@ const (
 type Config struct {
 	Source  string
 	Target  string
-	Upload  bool
 	Orphans Orphans
 	Include []string
 	Exclude []string

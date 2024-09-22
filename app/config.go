@@ -24,7 +24,6 @@ func getConfigFromFile(path string) (*contract.Config, error) {
 	}
 
 	config := &contract.Config{
-		Upload:  true,
 		Orphans: contract.Orphans_Ignore,
 		Include: make([]string, 0, 1),
 		Exclude: make([]string, 0, 1),

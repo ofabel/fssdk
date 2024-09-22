@@ -54,3 +54,15 @@ func compareFiles(a string, b string) int {
 
 	return 0
 }
+
+func getMaxWidth(files SyncMap) int {
+	max_width := 0
+
+	for _, file := range maps.Values(files) {
+		if file.Source != nil && len(file.Source.Path) > max_width {
+			max_width = len(file.Source.Path)
+		}
+	}
+
+	return max_width
+}
