@@ -389,6 +389,12 @@ func (rpc *RPC) Storage_Delete(path string, recursive bool) error {
 func (rpc *RPC) Storage_DownloadFile(remote_file_path string, local_file_path string, on_progress ProgressHandler) error {
 	target_path := filepath.FromSlash(local_file_path)
 
+	size, err := rpc.Storage_GetFileSize(remote_file_path)
+
+	if err != nil {
+		return err
+	}
+
 	fp, err := os.Create(target_path)
 
 	if err != nil {
@@ -397,22 +403,38 @@ func (rpc *RPC) Storage_DownloadFile(remote_file_path string, local_file_path st
 
 	defer fp.Close()
 
-	request := &flipper.Main{
-		Content: &flipper.Main_StorageReadRequest{
-			StorageReadRequest: &storage.ReadRequest{
-				Path: remote_file_path,
-			},
-		},
-	}
+	var response *flipper.Main = nil
+	var written int = 0
 
-	if response, err := rpc.sendAndReceive(request); err != nil {
-		return err
-	} else {
+	for response == nil || response.HasNext {
+		if response == nil {
+			request := &flipper.Main{
+				Content: &flipper.Main_StorageReadRequest{
+					StorageReadRequest: &storage.ReadRequest{
+						Path: remote_file_path,
+					},
+				},
+			}
+			response, err = rpc.sendAndReceive(request)
+		} else {
+			response, err = rpc.readAnswer(response.CommandId)
+		}
+
+		if err != nil {
+			return err
+		}
+
 		data := response.GetStorageReadResponse().GetFile().GetData()
 
-		fp.Write(data)
+		if n, err := fp.Write(data); err != nil {
+			return err
+		} else {
+			written += n
+		}
 
-		on_progress(false, 1)
+		progress := float32(written) / float32(size)
+
+		on_progress(false, progress)
 	}
 
 	return nil

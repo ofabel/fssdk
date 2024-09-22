@@ -1,5 +1,5 @@
 {
-    "source": ".",
+    "source": "test",
     "target": "/ext/test",
     "orphans": "download",
     "include": [
