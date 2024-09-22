@@ -1,6 +1,7 @@
 {
     "source": ".",
     "target": "/ext/test",
+    "orphans": "ignore",
     "include": [
         "*.go"
     ],

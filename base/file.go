@@ -83,9 +83,9 @@ func ListFiles(root string, includes []string, excludes []string, handler contra
 
 			file := &contract.File{
 				Name: filepath.Base(path),
-				Path: cleanPath(path),
-				Dir:  cleanPath(dir_path),
-				Rel:  cleanPath(rel_path),
+				Path: CleanPathSlash(path),
+				Dir:  CleanPathSlash(dir_path),
+				Rel:  CleanPathSlash(rel_path),
 				Size: info.Size(),
 			}
 
@@ -98,7 +98,13 @@ func ListFiles(root string, includes []string, excludes []string, handler contra
 	})
 }
 
-func cleanPath(path string) string {
+func CleanPath(path string) string {
+	clean_path := filepath.FromSlash(path)
+
+	return filepath.Clean(clean_path)
+}
+
+func CleanPathSlash(path string) string {
 	clean_path := filepath.Clean(path)
 
 	return filepath.ToSlash(clean_path)

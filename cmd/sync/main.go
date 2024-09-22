@@ -75,12 +75,12 @@ func Main(runtime *app.Runtime, args *Args) {
 
 	width := getMaxWidth(files)
 
-	on_progress := func(direction TransferDirection, skip bool, dry_run bool, source string, target string, progress float32) {
+	on_progress := func(direction TransferDirection, operation TransferOperation, dry_run bool, source string, target string, progress float32) {
 		source = padRight(source, width)
 
 		// skip
-		if skip {
-			status := formatStatus("SKIP")
+		if operation != TransferOperation_Handle {
+			status := formatStatus("%s", operation)
 
 			runtime.Printf("%s%s %s %s\n", status, source, direction, target)
 
@@ -121,10 +121,12 @@ func Main(runtime *app.Runtime, args *Args) {
 		}
 	}
 
-	on_make_folder := func(dry_run bool, source string, target string) {
+	on_make_folder := func(dry_run bool, direction TransferDirection, source string, target string) {
+		source = padRight(source, width)
+
 		status := formatStatus("MKFD")
 
-		runtime.Printf("> %s%s\n", status, target)
+		runtime.Printf("%s%s %s %s\n", status, source, direction, target)
 	}
 
 	if err := SyncFiles(session, files, source, target, config.Orphans, args.DryRun, on_progress, on_make_folder); err != nil {
