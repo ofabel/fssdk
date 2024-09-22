@@ -385,3 +385,35 @@ func (rpc *RPC) Storage_Delete(path string, recursive bool) error {
 
 	return err
 }
+
+func (rpc *RPC) Storage_DownloadFile(remote_file_path string, local_file_path string, on_progress ProgressHandler) error {
+	target_path := filepath.FromSlash(local_file_path)
+
+	fp, err := os.Create(target_path)
+
+	if err != nil {
+		return err
+	}
+
+	defer fp.Close()
+
+	request := &flipper.Main{
+		Content: &flipper.Main_StorageReadRequest{
+			StorageReadRequest: &storage.ReadRequest{
+				Path: remote_file_path,
+			},
+		},
+	}
+
+	if response, err := rpc.sendAndReceive(request); err != nil {
+		return err
+	} else {
+		data := response.GetStorageReadResponse().GetFile().GetData()
+
+		fp.Write(data)
+
+		on_progress(false, 1)
+	}
+
+	return nil
+}

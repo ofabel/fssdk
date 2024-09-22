@@ -121,7 +121,9 @@ func SyncFiles(session *rpc.RPC, files SyncMap, source string, target string, or
 		}
 
 		if file.Status == SyncStatus_Orphan {
-			handleOrphan(session, file, source, target, orphans, dry_run, dirs, on_progress, on_make_folder)
+			if err := handleOrphan(session, file, source, target, orphans, dry_run, dirs, on_progress, on_make_folder); err != nil {
+				return err
+			}
 
 			continue
 		}
@@ -235,7 +237,17 @@ func handleOrphan(session *rpc.RPC, file *SyncFile, source string, target string
 	}
 
 	if orphans == contract.Orphans_Download {
+		local_file_path := filepath.FromSlash(file.Source.Path)
 
+		return session.Storage_DownloadFile(file.Target.Path, local_file_path, func(skip bool, progress float32) {
+			operation := TransferOperation_Handle
+
+			if skip {
+				operation = TransferOperation_Skip
+			}
+
+			on_progress(TransferDirection_Download, operation, false, file.Source.Path, file.Target.Path, progress)
+		})
 	}
 
 	return nil
