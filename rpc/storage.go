@@ -425,8 +425,13 @@ func (rpc *RPC) Storage_DownloadFile(remote_file_path string, local_file_path st
 		}
 
 		data := response.GetStorageReadResponse().GetFile().GetData()
+		write := len(data)
 
-		if n, err := fp.Write(data); err != nil {
+		if int64(write) > size-int64(written) {
+			write = int(size) - written
+		}
+
+		if n, err := fp.Write(data[:write]); err != nil {
 			return err
 		} else {
 			written += n

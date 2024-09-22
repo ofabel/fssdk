@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/gobwas/glob"
 	"github.com/ofabel/fssdk/base"
 	"github.com/ofabel/fssdk/contract"
 	"github.com/ofabel/fssdk/rpc"
@@ -17,7 +18,7 @@ type TransferDirection string
 const (
 	TransferDirection_Upload   TransferDirection = ">"
 	TransferDirection_Download TransferDirection = "<"
-	TransferDirection_None     TransferDirection = "-"
+	TransferDirection_None     TransferDirection = ":"
 )
 
 type TransferOperation string
@@ -31,6 +32,8 @@ const (
 
 type ProgressHandler func(direction TransferDirection, operation TransferOperation, dry_run bool, source string, target string, progress float32)
 type MakeFolderHandler func(dry_run bool, direction TransferDirection, source string, target string)
+
+const NotExistingFile = "-"
 
 type SyncStatus string
 
@@ -50,7 +53,7 @@ type SyncMap map[string]*SyncFile
 
 var ErrFileUnknown = errors.New("unknown file")
 
-func GetLocalSyncMap(path string, includes []string, excludes []string) (SyncMap, error) {
+func GetLocalSyncMap(path string, includes []glob.Glob, excludes []glob.Glob) (SyncMap, error) {
 	sync_map := make(SyncMap)
 
 	err := base.ListFiles(path, includes, excludes, func(file *contract.File) error {
@@ -65,7 +68,7 @@ func GetLocalSyncMap(path string, includes []string, excludes []string) (SyncMap
 	return sync_map, err
 }
 
-func GetSyncMap(session *rpc.RPC, source string, target string, includes []string, excludes []string) (SyncMap, error) {
+func GetSyncMap(session *rpc.RPC, source string, target string, includes []glob.Glob, excludes []glob.Glob) (SyncMap, error) {
 	sync_map, err := GetLocalSyncMap(source, includes, excludes)
 
 	if err != nil {
@@ -84,7 +87,7 @@ func GetSyncMap(session *rpc.RPC, source string, target string, includes []strin
 		if sync_file, ok := sync_map[file.Rel]; ok {
 			sync_file.Status = SyncStatus_Both
 			sync_file.Target = file
-		} else {
+		} else if base.CanUse(file.Rel, includes, excludes) {
 			rel_path := filepath.FromSlash(file.Rel)
 			dir_path := filepath.Dir(rel_path)
 			abs_path := filepath.Join(source, rel_path)
@@ -193,7 +196,7 @@ func SyncFiles(session *rpc.RPC, files SyncMap, source string, target string, or
 
 func handleOrphan(session *rpc.RPC, file *SyncFile, source string, target string, orphans contract.Orphans, dry_run bool, dirs map[string]string, on_progress ProgressHandler, on_make_folder MakeFolderHandler) error {
 	if orphans == contract.Orphans_Ignore {
-		on_progress(TransferDirection_None, TransferOperation_Ignore, dry_run, "", file.Target.Path, 1)
+		on_progress(TransferDirection_None, TransferOperation_Ignore, dry_run, NotExistingFile, file.Target.Path, 1)
 
 		return nil
 	}
@@ -227,7 +230,7 @@ func handleOrphan(session *rpc.RPC, file *SyncFile, source string, target string
 	if !dry_run {
 		// NOP
 	} else if orphans == contract.Orphans_Delete {
-		on_progress(TransferDirection_Upload, TransferOperation_Delete, true, "", file.Target.Path, 1)
+		on_progress(TransferDirection_Upload, TransferOperation_Delete, true, NotExistingFile, file.Target.Path, 1)
 
 		return nil
 	} else if orphans == contract.Orphans_Download {
@@ -248,6 +251,12 @@ func handleOrphan(session *rpc.RPC, file *SyncFile, source string, target string
 
 			on_progress(TransferDirection_Download, operation, false, file.Source.Path, file.Target.Path, progress)
 		})
+	}
+
+	if orphans == contract.Orphans_Delete {
+		on_progress(TransferDirection_Upload, TransferOperation_Delete, false, NotExistingFile, file.Target.Path, 1)
+
+		return session.Storage_Delete(file.Target.Path, false)
 	}
 
 	return nil

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ofabel/fssdk/app"
+	"github.com/ofabel/fssdk/base"
 )
 
 const Command = "sync"
@@ -35,25 +36,25 @@ func Main(runtime *app.Runtime, args *Args) {
 
 	source = runtime.GetAbsolutePath(source)
 
-	if args.Local {
-		config := runtime.Config()
+	config := runtime.Config()
 
-		sync_map, err := GetLocalSyncMap(source, config.Include, config.Exclude)
+	include, err := base.ToGlobArray(config.Include)
 
-		if err != nil {
-			panic(err)
-		}
-
-		ListFilesFromSyncMap(runtime, sync_map)
-
-		return
+	if err != nil {
+		panic(err)
 	}
 
-	if args.List {
-		config := runtime.Config()
-		session := runtime.RPC()
+	exclude, err := base.ToGlobArray(config.Exclude)
 
-		sync_map, err := GetSyncMap(session, source, target, config.Include, config.Exclude)
+	if err != nil {
+		panic(err)
+	}
+
+	//
+	// list local files only
+	//
+	if args.Local {
+		sync_map, err := GetLocalSyncMap(source, include, exclude)
 
 		if err != nil {
 			panic(err)
@@ -65,9 +66,25 @@ func Main(runtime *app.Runtime, args *Args) {
 	}
 
 	session := runtime.RPC()
-	config := runtime.Config()
 
-	files, err := GetSyncMap(session, source, target, config.Include, config.Exclude)
+	//
+	// list files only
+	//
+	if args.List {
+		sync_map, err := GetSyncMap(session, source, target, include, exclude)
+
+		if err != nil {
+			panic(err)
+		}
+
+		ListFilesFromSyncMap(runtime, sync_map)
+
+		return
+	}
+	//
+	// full file sync
+	//
+	files, err := GetSyncMap(session, source, target, include, exclude)
 
 	if err != nil {
 		panic(err)

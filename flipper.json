@@ -1,9 +1,10 @@
 {
     "source": "test",
     "target": "/ext/test",
-    "orphans": "download",
+    "orphans": "ignore",
     "include": [
-        "*.go"
+        "*.go",
+        "*.jpg"
     ],
     "exclude": [
         "**.git**",
