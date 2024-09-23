@@ -1,5 +1,9 @@
 # Flipperzero Script SDK
 
+Looking for a solution to upload your scripts to Flipper Zero without using [qFlipper](https://flipperzero.one/update)?
+
+![Demo](./docs/demo.gif)
+
 ## Requirements
 
 * [protoc](https://github.com/protocolbuffers/protobuf/releases)

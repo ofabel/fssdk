@@ -1,5 +1,6 @@
 /dist/
 /venv/
 /test/
+/node_modules/
 /protoc
 __pycache__

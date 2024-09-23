@@ -1,0 +1,179 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: bash -l
+  
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: ~/dev/scripts
+  
+  # Export additional ENV variables
+  env:
+    recording: true
+  
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 80
+  
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 16
+  
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+  
+  # Quality
+  # 1 - 100
+  quality: 100
+  
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+  
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 2000
+  
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: floating
+    title: null
+    style:
+      border: 0px black solid
+      # boxShadow: none
+      # margin: 0px
+  
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+  
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+  
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+  
+  # The size of the font
+  fontSize: 12
+  
+  # The height of lines
+  lineHeight: 1
+  
+  # The spacing between letters
+  letterSpacing: 0
+  
+  # Theme
+  theme:
+    background: "transparent"
+    foreground: "#afafaf"
+    cursor: "#c7c7c7"
+    black: "#232628"
+    red: "#fc4384"
+    green: "#b3e33b"
+    yellow: "#ffa727"
+    blue: "#75dff2"
+    magenta: "#ae89fe"
+    cyan: "#708387"
+    white: "#d5d5d0"
+    brightBlack: "#626566"
+    brightRed: "#ff7fac"
+    brightGreen: "#c8ed71"
+    brightYellow: "#ebdf86"
+    brightBlue: "#75dff2"
+    brightMagenta: "#ae89fe"
+    brightCyan: "#b1c6ca"
+    brightWhite: "#f9f9f4"
+  
+# Records, feel free to edit them
+records:
+  - delay: 1
+    content: "\0"
+  - delay: 367
+    content: "\e[1;32mofa@yoga\e[0m:\e[33m~/dev/scripts\e[0m "
+  - delay: 250
+    content: f
+  - delay: 134
+    content: s
+  - delay: 249
+    content: s
+  - delay: 270
+    content: d
+  - delay: 239
+    content: k
+  - delay: 1291
+    content: "\r\n\e[?2004l\r"
+  - delay: 319
+    content: "[MKFD]  .                                   > /ext/demo\r\n"
+  - delay: 56
+    content: "[100%]  ~/dev/scripts/src/uart_echo.js      > /ext/demo/uart_echo.js\r\n"
+  - delay: 254
+    content: "[100%]  ~/dev/scripts/src/textbox.js        > /ext/demo/textbox.js\r\n"
+  - delay: 122
+    content: "[100%]  ~/dev/scripts/src/submenu.js        > /ext/demo/submenu.js\r\n"
+  - delay: 110
+    content: "[100%]  ~/dev/scripts/src/program.js        > /ext/demo/program.js\r\n"
+  - delay: 118
+    content: "[100%]  ~/dev/scripts/src/notify.js         > /ext/demo/notify.js\r\n"
+  - delay: 115
+    content: "[ 12%]  ~/dev/scripts/src/math.js           > /ext/demo/math.js\r"
+  - delay: 13
+    content: "[ 23%]  ~/dev/scripts/src/math.js           > /ext/demo/math.js\r"
+  - delay: 9
+    content: "[ 33%]  ~/dev/scripts/src/math.js           > /ext/demo/math.js\r"
+  - delay: 11
+    content: "[ 44%]  ~/dev/scripts/src/math.js           > /ext/demo/math.js\r"
+  - delay: 10
+    content: "[ 56%]  ~/dev/scripts/src/math.js           > /ext/demo/math.js\r"
+  - delay: 8
+    content: "[ 64%]  ~/dev/scripts/src/math.js           > /ext/demo/math.js\r"
+  - delay: 9
+    content: "[ 77%]  ~/dev/scripts/src/math.js           > /ext/demo/math.js\r"
+  - delay: 8
+    content: "[ 89%]  ~/dev/scripts/src/math.js           > /ext/demo/math.js\r"
+  - delay: 12
+    content: "[100%]  ~/dev/scripts/src/math.js           > /ext/demo/math.js\r\n"
+  - delay: 109
+    content: "[100%]  ~/dev/scripts/src/load_api.js       > /ext/demo/load_api.js\r\n"
+  - delay: 111
+    content: "[100%]  ~/dev/scripts/src/load.js           > /ext/demo/load.js\r\n"
+  - delay: 113
+    content: "[100%]  ~/dev/scripts/src/dialog.js         > /ext/demo/dialog.js\r\n"
+  - delay: 111
+    content: "[100%]  ~/dev/scripts/src/delay.js          > /ext/demo/delay.js\r\n"
+  - delay: 112
+    content: "[100%]  ~/dev/scripts/src/console.js        > /ext/demo/console.js\r\n"
+  - delay: 110
+    content: "[100%]  ~/dev/scripts/src/badusb_demo.js    > /ext/demo/badusb_demo.js\r\n"
+  - delay: 144
+    content: "[100%]  ~/dev/scripts/src/bad_uart.js       > /ext/demo/bad_uart.js\r\n"
+  - delay: 142
+    content: "[100%]  ~/dev/scripts/src/array_buf_test.js > /ext/demo/array_buf_test.js\r\n"
+  - delay: 195
+    content: "\r\n>: loader close\r\nloader close\r\r\nNo application is running\r\r\n\r\r\n>: js /ext/demo/program.js\r\n"
+  - delay: 27
+    content: "js /ext/demo/program.js\r\r\nRunning script /ext/demo/program.js, press CTRL+C to stop\r\r\nScript done!\r\r\n\r"
