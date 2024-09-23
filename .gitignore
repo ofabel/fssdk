@@ -1,4 +1,5 @@
 /dist/
 /venv/
+/test/
 /protoc
 __pycache__
