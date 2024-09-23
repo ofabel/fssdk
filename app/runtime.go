@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/ofabel/fssdk/cli"
@@ -33,6 +35,16 @@ func (r *Runtime) Destroy() {
 
 	if r.cli != nil {
 		r.cli.Close()
+	}
+
+	err := recover()
+
+	if err != nil {
+		msg := fmt.Sprintf("%s\n", err)
+
+		os.Stderr.WriteString(msg)
+
+		os.Exit(1)
 	}
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/alexflint/go-arg"
@@ -11,7 +12,7 @@ import (
 	"github.com/ofabel/fssdk/cmd/sync"
 )
 
-var args struct {
+type Args struct {
 	Config string     `arg:"-c,--config" help:"Path to the config file." default:"flipper.json"`
 	Quiet  bool       `arg:"-q,--quiet" help:"Don't print any output." default:"false"`
 	Port   string     `arg:"-p,--port" help:"The port where your Flipper is connected."`
@@ -20,7 +21,17 @@ var args struct {
 	Sync   *sync.Args `arg:"subcommand:sync"`
 }
 
+func (Args) Version() string {
+	return fmt.Sprintf("Flipper Zero Script SDK - %s", version)
+}
+
+func (Args) Epilogue() string {
+	return "For more details visit https://github.com/ofabel/fssdk"
+}
+
 func main() {
+	var args Args
+
 	parser := arg.MustParse(&args)
 
 	runtime := app.New(args.Config, args.Quiet, args.Port)
@@ -41,37 +52,4 @@ func main() {
 	}
 
 	os.Exit(0)
-	/*
-	   app := app.New("", config)
-
-	   defer app.Close()
-
-	   	if _, err := app.GetRpcSession(); err != nil {
-	   		log.Fatal(err)
-
-	   		return
-	   	}
-
-	   files, err := app.GetSyncMap(config.Source, config.Target, config.Include, config.Exclude)
-
-	   	if err != nil {
-	   		log.Fatal(err)
-	   	}
-
-	   	err = app.SyncFiles(files, config.Target, func(source string, target string, progress float32) {
-	   		if progress < 1.0 {
-	   			fmt.Printf("%s [%d%%]\r", target, int(100*progress))
-	   		} else {
-	   			fmt.Printf("%s         \n", target)
-	   		}
-	   	})
-
-	   	if err != nil {
-	   		log.Fatal(err)
-	   	}
-
-	   	if err := app.StopRpcSession(); err != nil {
-	   		log.Fatal(err)
-	   	}
-	*/
 }
