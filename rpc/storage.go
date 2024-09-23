@@ -146,11 +146,7 @@ func (rpc *RPC) Storage_UploadFile(source string, target string, force bool, on_
 	for {
 		chunk, err = fp.Read(buffer)
 
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
+		if err != nil && err != io.EOF {
 			return err
 		}
 
@@ -168,9 +164,15 @@ func (rpc *RPC) Storage_UploadFile(source string, target string, force bool, on_
 		progress = float32(written) / float32(size)
 
 		on_progress(false, progress)
+
+		if written >= size {
+			break
+		}
 	}
 
-	_, err = rpc.readAnswer(request.CommandId)
+	if size > 0 {
+		_, err = rpc.readAnswer(request.CommandId)
+	}
 
 	return err
 }
