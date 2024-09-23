@@ -97,7 +97,7 @@ func (rpc *RPC) Storage_GetTree(path string) ([]*contract.File, error) {
 	return files, err
 }
 
-func (rpc *RPC) Storage_UploadFile(source string, target string, on_progress ProgressHandler) error {
+func (rpc *RPC) Storage_UploadFile(source string, target string, force bool, on_progress ProgressHandler) error {
 	source_path := filepath.FromSlash(source)
 	stat, err := os.Stat(source_path)
 
@@ -109,10 +109,12 @@ func (rpc *RPC) Storage_UploadFile(source string, target string, on_progress Pro
 		return ErrNoRegularFile
 	}
 
-	if same, _ := rpc.Storage_CheckFilesAreSame(source_path, target); same {
-		on_progress(true, 1.0)
+	if !force {
+		if same, _ := rpc.Storage_CheckFilesAreSame(source_path, target); same {
+			on_progress(true, 1.0)
 
-		return nil
+			return nil
+		}
 	}
 
 	fp, err := os.Open(source_path)

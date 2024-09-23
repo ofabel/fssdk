@@ -109,7 +109,7 @@ func GetSyncMap(session *rpc.RPC, source string, target string, includes []glob.
 	return sync_map, err
 }
 
-func SyncFiles(session *rpc.RPC, files SyncMap, source string, target string, orphans contract.Orphans, dry_run bool, on_progress ProgressHandler, on_make_folder MakeFolderHandler) error {
+func SyncFiles(session *rpc.RPC, files SyncMap, source string, target string, orphans contract.Orphans, force bool, dry_run bool, on_progress ProgressHandler, on_make_folder MakeFolderHandler) error {
 	dirs := make(map[string]string)
 	keys := maps.Keys(files)
 
@@ -160,7 +160,9 @@ func SyncFiles(session *rpc.RPC, files SyncMap, source string, target string, or
 
 		var same bool
 
-		if dry_run {
+		if force {
+			same = false
+		} else if dry_run {
 			same, _ = session.Storage_CheckFilesAreSame(file.Source.Path, target_file_path)
 		}
 
@@ -176,7 +178,7 @@ func SyncFiles(session *rpc.RPC, files SyncMap, source string, target string, or
 			continue
 		}
 
-		err := session.Storage_UploadFile(file.Source.Path, target_file_path, func(skip bool, progress float32) {
+		err := session.Storage_UploadFile(file.Source.Path, target_file_path, force, func(skip bool, progress float32) {
 			operation := TransferOperation_Handle
 
 			if skip {

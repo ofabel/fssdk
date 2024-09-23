@@ -16,7 +16,20 @@ const CommandCtrlC = "<CTRL+C>"
 type ExecCallback func(command string, output []byte, err error) (bool, error)
 
 func Main(runtime *app.Runtime, args *Args) {
+	if args == nil {
+		args = &Args{}
+	}
+
 	config := runtime.Config()
+
+	if args.DryRun {
+		for _, command := range config.Run {
+			runtime.Printf("%s%s\n", cli.TerminalDelimiter[1:], command)
+		}
+
+		return
+	}
+
 	session := runtime.CLI()
 
 	RunCommands(session, config.Run, func(command string, output []byte, err error) (bool, error) {

@@ -11,7 +11,7 @@ const Command = "sync"
 
 type Args struct {
 	DryRun bool   `arg:"-d,--dry-run" help:"Do a dry run, don't upload, download or delete any files." default:"false"`
-	Force  bool   `arg:"-f,--force" help:"Upload without checks." default:"false"`
+	Force  bool   `arg:"-f,--force" help:"Upload without any similarity checks." default:"false"`
 	List   bool   `arg:"-l,--list" help:"List matching files." default:"false"`
 	Local  bool   `arg:"-o,--local" help:"List matching files from local source only." default:"false"`
 	Source string `arg:"-s,--source" help:"Sync all from source to target. If source is a folder, target is also treated as a folder."`
@@ -19,6 +19,10 @@ type Args struct {
 }
 
 func Main(runtime *app.Runtime, args *Args) {
+	if args == nil {
+		args = &Args{}
+	}
+
 	source := args.Source
 	target := args.Target
 
@@ -146,7 +150,7 @@ func Main(runtime *app.Runtime, args *Args) {
 		runtime.Printf("%s%s %s %s\n", status, source, direction, target)
 	}
 
-	if err := SyncFiles(session, files, source, target, config.Orphans, args.DryRun, on_progress, on_make_folder); err != nil {
+	if err := SyncFiles(session, files, source, target, config.Orphans, args.Force, args.DryRun, on_progress, on_make_folder); err != nil {
 		panic(err)
 	}
 }
