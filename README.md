@@ -14,8 +14,8 @@ Options:
                          Path to the config file. [default: flipper.json]
   --quiet, -q            Don't print any output. [default: false]
   --port PORT, -p PORT   The port where your Flipper is connected.
-  --help, -h             display this help and exit
-  --version              display version and exit
+  --help, -h             Display this help and exit
+  --version              Display version and exit
 
 Commands:
   cli
@@ -88,7 +88,7 @@ Usage: fssdk cli [--command COMMAND]
 
 Options:
   --command COMMAND, -C COMMAND
-                         execute a single command.
+                         Execute a single command.
 ```
 
 ## Development

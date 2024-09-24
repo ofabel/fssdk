@@ -18,7 +18,7 @@ run:
 
 .PHONY: build
 build: clean protobuf
-	go build -o ./dist .
+	GOOS=linux go build -o ./dist .
 
 .PHONY: protobuf
 protobuf: clean

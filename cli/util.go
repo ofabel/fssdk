@@ -1,13 +1,12 @@
+//go:build !darwin
+
 package cli
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/albenik/go-serial/v2/enumerator"
 )
-
-var ErrNoFlipperFound = errors.New("no flipper device found")
 
 func GetFlipperPort() (string, error) {
 	ports, err := enumerator.GetDetailedPortsList()
