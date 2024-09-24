@@ -25,7 +25,19 @@ func Main(runtime *app.Runtime, args *Args) {
 	}
 
 	buffer := make([]byte, 1)
-	cmd := ""
+	cmd := args.Command
+
+	if len(cmd) > 0 {
+		session.SendCommand(cmd)
+
+		if out, err := session.ReadUntilTerminal(); err != nil {
+			panic(err)
+		} else {
+			fmt.Printf("%s\n", out)
+		}
+
+		return
+	}
 
 	for {
 		if n, err := os.Stdin.Read(buffer); err != nil {
