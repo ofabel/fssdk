@@ -5,7 +5,7 @@ set -e
 cat << EOF > version.go
 package main
 
-const version = "$(git describe --tags master)"
+const version = "$(git describe --tags --abbrev=0 master)"
 EOF
 
 for osArch in `cat ./build.txt`; do
