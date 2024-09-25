@@ -4,7 +4,27 @@ Looking for a solution to upload your scripts to Flipper Zero without using [qFl
 
 ![Demo](./docs/demo.gif)
 
+## Installation
+
+Just download the [latest release](https://github.com/ofabel/fssdk/releases/latest) and place it somewhere on your computer:
+This can be your project's root folder or a more general location like `/usr/local/bin`.
+
 ## Usage
+
+This application is a simple CLI program. The program consists of several sub commands:
+
+* **cli** - Opens a terminal session on the Flipper Zero (use <kbd>Ctrl</kbd> + <kbd>C</kbd> to close).
+* **run** - Executes only the commands from the `run` section in the config file.
+* **sync** - Do a file sync according to the settings in the config file.
+
+If no sub command is provided, the program will perform as follows:
+
+1. **sync** files and folders.
+2. **run** the defined commands.
+
+It is not strictly necessary to use a config file.
+Small tasks, like uploading a few files and folders, can also be done with CLI arguments.
+However, the [config file](#configuration) should assist you on repetitive tasks.
 
 ```plain
 Usage: fssdk [--config CONFIG] [--quiet] [--port PORT] <command> [<args>]
@@ -24,6 +44,8 @@ Commands:
 ```
 
 ### Configuration
+
+By default, the application checks for a `flipper.json` file in the current working directory.
 
 ```json
 {
@@ -48,15 +70,23 @@ Commands:
 
 * **source** - Defines the source folder of your scripts. The path must be relative to the config file location.
 * **target** - The target folder of your scripts on the Flipper's SD card. The path must be absolute.
-* **orphans** - How to handle orphaned files in the target folder:
-    * **ignore** - Ignore the files.
+* **orphans** - _optional_ - How to handle orphaned files in the target folder:
+    * **ignore** - _default_ - Ignore the files.
     * **download** - Download the files.
     * **delete** - Delete the files.
 * **include** - Glob patterns to match included files.
 * **exclude** - Glob patterns to match excluded files.
 * **run** - Commands to execute. Use `<CTRL+C>` to abort a running command.
 
+> [!TIP]
+> The config file should assist you on repetitive tasks.
+> It defines all necessary settings, so you only have to run `fssdk` without any arguments.
+
 ### Synchronization
+
+File synchronization is one of the key features of this application.
+The program will only handle files, that match the `include` patterns and don't match the `exclude` patterns from the config file.
+You can overwrite the `source` and/or `target` settings from the config file with the corresponding CLI arguments.
 
 ```plain
 Usage: fssdk sync [--dry-run] [--force] [--list] [--local] [--source SOURCE] [--target TARGET]
@@ -72,7 +102,14 @@ Options:
                          Sync all from source to target.
 ```
 
+> [!TIP]
+> Use the `--list` argument to check your `include` and `exclude` patterns against the filesystem.
+
 ### Run
+
+One of the use cases for this tool is to assist script development with the Flipper Zero:
+You write your JS or Python script on your computer and have to upload it to the device in order to test it.
+The `run` task executes a list of predefined commands on your Flipper.
 
 ```plain
 Usage: fssdk run [--dry-run]
@@ -82,6 +119,9 @@ Options:
 ```
 
 ### CLI
+
+Start a terminal session without any additional program like PuTTY or Minicom.
+You can also send a single command and receive its output.
 
 ```plain
 Usage: fssdk cli [--command COMMAND]
