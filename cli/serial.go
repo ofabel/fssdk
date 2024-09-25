@@ -14,7 +14,7 @@ type CLI struct {
 
 var ErrNoTerminalFound = errors.New("no terminal found")
 var ErrCommandNotSend = errors.New("unable to send command")
-var ErrNoFlipperFound = errors.New("no flipper device found")
+var ErrNoFlipperFound = errors.New("no flipper device found, consider using the --port PORT argument")
 
 var TerminalDelimiter = []byte("\n>: ")
 var CR = byte('\r')

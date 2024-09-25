@@ -6,8 +6,6 @@ name: Go
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
 
 jobs:
 
@@ -22,4 +20,11 @@ jobs:
         go-version: '1.22'
 
     - name: Build
-      run: GOOS=darwin GOARCH=arm64 go build -v .
+      run: GOOS=darwin GOARCH=arm64 go build -v -o ./fssdk-macos-arm64 .
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-binary
+        path: ./fssdk-macos-arm64
+        overwrite: true
