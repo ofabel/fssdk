@@ -2,6 +2,11 @@
 
 set -e
 
+cat << EOF > version.go
+package main
+
+const version = "$(git describe --tags master)"
+EOF
 
 for osArch in `cat ./build.txt`; do
     mkdir -p ./dist/temp

@@ -22,7 +22,7 @@ type Args struct {
 }
 
 func (Args) Version() string {
-	return fmt.Sprintf("Flipper Zero Script SDK - %s", version)
+	return fmt.Sprintf("Flipper Zero Script SDK - %s", version[1:])
 }
 
 func (Args) Epilogue() string {
