@@ -45,6 +45,14 @@ func (cli *CLI) Close() error {
 	return cli.port.Close()
 }
 
+func (cli *CLI) SetReadTimeout(timeout int) {
+	cli.port.SetReadTimeout(timeout)
+}
+
+func (cli *CLI) SetWriteTimeout(timeout int) {
+	cli.port.SetWriteTimeout(timeout)
+}
+
 func (cli *CLI) Write(data []byte) (int, error) {
 	for {
 		n, err := cli.port.Write(data)
