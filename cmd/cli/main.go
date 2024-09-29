@@ -1,11 +1,11 @@
 package cli
 
 import (
+	"strings"
 	"sync/atomic"
 
 	"github.com/gdamore/tcell"
 	"github.com/ofabel/fssdk/app"
-	"github.com/ofabel/fssdk/cli"
 )
 
 type Args struct {
@@ -42,7 +42,9 @@ func Main(runtime *app.Runtime, args *Args) {
 
 	defer screen.Fini()
 
-	go readFromSerial(session, screen)
+	terminal := NewTerminal(screen)
+
+	go readFromSerial(session, terminal)
 
 	for {
 		screen.Show()
@@ -56,6 +58,8 @@ func Main(runtime *app.Runtime, args *Args) {
 			} else {
 				exit.Store(true)
 			}
+		case *tcell.EventResize:
+			terminal.Resize()
 		}
 
 		if exit.Load() {
@@ -119,17 +123,19 @@ func execSingleCommand(runtime *app.Runtime, args *Args) {
 
 	defer session.Close()
 
-	if out, err := session.ReadUntilTerminal(); err != nil {
+	if _, err := session.ReadUntilTerminal(); err != nil {
 		panic(err)
-	} else {
-		runtime.Printf("%s%s", out, cli.TerminalDelimiter)
 	}
 
 	session.SendCommand(args.Command)
 
-	if out, err := session.ReadUntilTerminal(); err != nil {
+	if raw_output, err := session.ReadUntilTerminal(); err != nil {
 		panic(err)
 	} else {
-		runtime.Printf("%s\n", out)
+		n := len(args.Command)
+		output := string(raw_output[n:])
+		output = strings.Trim(output, "\r\n")
+
+		runtime.Printf("%s\n", output)
 	}
 }

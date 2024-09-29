@@ -130,6 +130,8 @@ Options:
   --command COMMAND, -C COMMAND
                          Execute a single command.
 ```
+> [!NOTE]
+> The full VT100 support of the CLI command is not yet completed.
 
 ## Development
 

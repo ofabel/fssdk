@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2024-09-29
+
 ### Added
 
 * CLI command with limited VT100 support (just enough for the Flipper CLI).
@@ -19,5 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * CLI sub command can be used to start a terminal session.
 * USB port detection (currently not supported on Mac OS).
 
-[Unreleased]: https://github.com/ofabel/fssdk/compare/v1.0.0-rc.1...dev
+[Unreleased]: https://github.com/ofabel/fssdk/compare/v1.0.0...dev
+[1.0.0]: https://github.com/ofabel/fssdk/compare/v1.0.0-rc.1...v1.0.0
 [1.0.0-rc.1]: https://github.com/ofabel/fssdk/releases/tag/v1.0.0-rc.1

@@ -3,61 +3,35 @@ package cli
 import (
 	"time"
 
-	"github.com/gdamore/tcell"
 	"github.com/ofabel/fssdk/cli"
 )
 
-func readFromSerial(session *cli.CLI, screen tcell.Screen) {
-	lines := make([]string, 1, 100)
-	cx, cy, x, y := 0, 0, 0, 0
-	line := ""
-
+func readFromSerial(session *cli.CLI, t *terminal) {
 	for {
-		lines[0] = line
 		// update screen
-		for i := range x {
-			var c rune = 0
-
-			if i < len(line) {
-				c = rune(line[i])
-			}
-
-			screen.SetContent(i, y, c, nil, tcell.StyleDefault)
-		}
-
-		screen.ShowCursor(cx, cy)
-
-		screen.Show()
+		t.Render()
 
 		// read & handle character
 		chr := readCharacter(session)
 
-		if chr == -1 {
+		if exit.Load() {
 			return
 		}
 
 		if chr == '\r' {
-			cx = 0
+			t.CarriageReturn()
 
 			continue
 		}
 
 		if chr == '\n' {
-			cx = 0
-			cy++
-
-			x = 0
-			y++
-
-			line = ""
+			t.LineFeed()
 
 			continue
 		}
 
 		if chr == Delete {
-			cx--
-
-			line = line[:cx] + line[cx+1:]
+			t.Backspace()
 
 			continue
 		}
@@ -73,13 +47,7 @@ func readFromSerial(session *cli.CLI, screen tcell.Screen) {
 					num2, chr := readNumUntilRune(session)
 
 					if chr == 'f' {
-						line = ""
-
-						y = 0
-						x = 0
-
-						cx = num2
-						cy = num
+						t.SetCursor(num2, num)
 					}
 
 					continue
@@ -87,42 +55,35 @@ func readFromSerial(session *cli.CLI, screen tcell.Screen) {
 
 				// left arrow
 				if chr == 'D' {
-					cx--
+					t.MoveLeft()
 
 					continue
 				}
 
 				// right arrow
 				if chr == 'C' {
-					cx++
+					t.MoveRight()
 
 					continue
 				}
 
 				// backspace / delete
 				if chr == 'P' {
-					line = line[:cx] + line[cx+1:]
+					t.EraseCharacter()
 
 					continue
 				}
 
 				// erase line
 				if chr == 'K' && num == 2 {
-					line = ""
-
-					cx = 0
+					t.EraseLine()
 
 					continue
 				}
 
 				// erase page
 				if chr == 'J' && num == 2 {
-					line = ""
-
-					y = 0
-					x = 0
-
-					cx = 0
+					t.ErasePage()
 
 					continue
 				}
@@ -152,10 +113,7 @@ func readFromSerial(session *cli.CLI, screen tcell.Screen) {
 			continue
 		}
 
-		line = line[:cx] + string(chr) + line[cx:]
-
-		x++
-		cx++
+		t.Insert(chr)
 	}
 }
 
